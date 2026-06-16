@@ -5024,6 +5024,102 @@ function AppWithSync({ user }: { user: User }) {
   )
 }
 
+// ── Weather Widget ─────────────────────────────────────────────────────────
+const OWM_KEY = '2b76caec715fe1d44476824b9c5303a2'
+const WEATHER_CACHE_KEY = 'ls-weather-cache'
+const WEATHER_CACHE_TTL = 30 * 60 * 1000 // 30 min
+
+interface WeatherData {
+  city: string
+  temp: number
+  feelsLike: number
+  desc: string
+  icon: string
+  ts: number
+}
+
+function owmIcon(icon: string, _desc?: string): string {
+  const id = icon.slice(0, 2)
+  const night = icon.endsWith('n')
+  if (id === '01') return night ? '🌙' : '☀️'
+  if (id === '02') return night ? '🌙' : '🌤️'
+  if (id === '03') return '🌥️'
+  if (id === '04') return '☁️'
+  if (id === '09') return '🌦️'
+  if (id === '10') return '🌧️'
+  if (id === '11') return '⛈️'
+  if (id === '13') return '❄️'
+  if (id === '50') return '🌫️'
+  return '🌡️'
+}
+
+function WeatherWidget() {
+  const [weather, setWeather] = useState<WeatherData | null>(() => {
+    try {
+      const c = localStorage.getItem(WEATHER_CACHE_KEY)
+      if (c) {
+        const d: WeatherData = JSON.parse(c)
+        if (Date.now() - d.ts < WEATHER_CACHE_TTL) return d
+      }
+    } catch {}
+    return null
+  })
+  const [loading, setLoading] = useState(!weather)
+  const [error, setError] = useState(false)
+
+  useEffect(() => {
+    if (weather && Date.now() - weather.ts < WEATHER_CACHE_TTL) return
+    if (!navigator.geolocation) { setLoading(false); setError(true); return }
+
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        try {
+          const url = `https://api.openweathermap.org/data/2.5/weather?lat=${coords.latitude}&lon=${coords.longitude}&appid=${OWM_KEY}&units=metric&lang=ru`
+          const res = await fetch(url)
+          if (!res.ok) throw new Error()
+          const d = await res.json()
+          const data: WeatherData = {
+            city: d.name,
+            temp: Math.round(d.main.temp),
+            feelsLike: Math.round(d.main.feels_like),
+            desc: d.weather[0].description,
+            icon: d.weather[0].icon,
+            ts: Date.now(),
+          }
+          localStorage.setItem(WEATHER_CACHE_KEY, JSON.stringify(data))
+          setWeather(data)
+        } catch { setError(true) }
+        setLoading(false)
+      },
+      () => { setLoading(false); setError(true) }
+    )
+  }, [])
+
+  if (loading) return (
+    <div className="weather-widget weather-widget--loading">
+      <span>🌡️</span><span>Определяем погоду...</span>
+    </div>
+  )
+  if (error || !weather) return null
+
+  const emoji = owmIcon(weather.icon, weather.desc)
+  const descCap = weather.desc.charAt(0).toUpperCase() + weather.desc.slice(1)
+
+  return (
+    <div className="weather-widget">
+      <span className="weather-emoji">{emoji}</span>
+      <div className="weather-info">
+        <span className="weather-temp">{weather.temp}°</span>
+        <span className="weather-desc">{descCap}</span>
+      </div>
+      <div className="weather-right">
+        <span className="weather-city">{weather.city}</span>
+        <span className="weather-feels">Ощущается {weather.feelsLike}°</span>
+      </div>
+    </div>
+  )
+}
+
 function SyncIndicator({ status }: { status: SyncStatus }) {
   if (status === 'idle') return null
   const map = {
@@ -5146,6 +5242,7 @@ function MainApp({ user }: { user: User }) {
             </header>
 
             <main className="main">
+              <WeatherWidget />
               <div className="grid">
                 {filtered.map(card => (
                   <div
