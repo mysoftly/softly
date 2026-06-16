@@ -131,9 +131,17 @@ function useLS<T>(key: string, init: T): [T, React.Dispatch<React.SetStateAction
   }, [])
 
   const loadFromSupabase = useCallback(async (uid: string) => {
-    const { data } = await supabase.from('user_data').select('value').eq('user_id', uid).eq('key', key).single()
-    if (data?.value !== undefined && data?.value !== null) setState(data.value as T)
-    setSyncReady(true)
+    try {
+      const { data, error } = await supabase.from('user_data').select('value').eq('user_id', uid).eq('key', key).single()
+      if (error && error.code !== 'PGRST116') {
+        // Сетевая ошибка — не включаем sync чтобы не затереть данные пустым состоянием
+        return
+      }
+      if (data?.value !== undefined && data?.value !== null) setState(data.value as T)
+      setSyncReady(true)
+    } catch {
+      // Нет сети — не включаем sync
+    }
   }, [key])
 
   useEffect(() => {
@@ -143,14 +151,9 @@ function useLS<T>(key: string, init: T): [T, React.Dispatch<React.SetStateAction
 
   useEffect(() => {
     try { localStorage.setItem(key, JSON.stringify(state)) } catch {}
-    console.log('[sync check]', key, 'userId:', userId, 'syncReady:', syncReady)
     if (!userId || !syncReady) return
     supabase.from('user_data')
       .upsert({ user_id: userId, key, value: state, updated_at: new Date().toISOString() }, { onConflict: 'user_id,key' })
-      .then(({ error }) => {
-        if (error) console.error('[sync error]', key, error.message)
-        else console.log('[sync ok]', key)
-      })
   }, [key, state, userId, syncReady])
 
   return [state, setState]
