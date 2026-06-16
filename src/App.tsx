@@ -4308,7 +4308,7 @@ function ChecklistsScreen(_: { onBack: () => void }) {
     const img = new Image()
     img.onload = () => renderCanvas(img)
     img.onerror = () => renderCanvas(null)
-    img.src = new URL(`seasons/${openSeason}.jpg`, window.location.href).href
+    img.src = window.location.origin + '/softly/seasons/' + openSeason + '.jpg'
     return
     function renderCanvas(bgImg: HTMLImageElement | null) {
     const rows = Math.ceil(items.length / COLS)
