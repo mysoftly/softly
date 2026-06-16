@@ -4516,9 +4516,9 @@ function ChecklistsScreen(_: { onBack: () => void }) {
 
   // Main screen — 4 season cards
   return (
-    <div className="detail-screen">
-      <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 26, color: '#6E5F5D', marginBottom: 6, padding: '0 20px' }}>Чек-листы</div>
-      <div style={{ fontFamily: 'Jost, sans-serif', fontSize: 13, color: '#9B8B84', marginBottom: 24, padding: '0 20px' }}>Выбери сезон</div>
+    <div className="detail-screen" style={{ justifyContent: 'center' }}>
+      <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 36, color: '#6E5F5D', marginBottom: 6, padding: '0 20px', textAlign: 'center' }}>Чек-листы</div>
+      <div style={{ fontFamily: 'Jost, sans-serif', fontSize: 13, color: '#9B8B84', marginBottom: 32, padding: '0 20px', textAlign: 'center' }}>Выбери сезон</div>
       <div style={{ padding: '0 16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         {(['spring', 'summer', 'autumn', 'winter'] as Season[]).map(s => {
           const cfg = SEASON_CONFIG[s]
