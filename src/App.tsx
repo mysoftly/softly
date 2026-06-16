@@ -124,25 +124,28 @@ function useLS<T>(key: string, init: T): [T, React.Dispatch<React.SetStateAction
     try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : init } catch { return init }
   })
   const [userId, setUserId] = useState<string | null>(null)
+  const [syncReady, setSyncReady] = useState(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setUserId(data.session?.user?.id ?? null))
   }, [])
 
-  useEffect(() => {
-    try { localStorage.setItem(key, JSON.stringify(state)) } catch {}
-    if (!userId) return
-    supabase.from('user_data').upsert({ user_id: userId, key, value: state, updated_at: new Date().toISOString() }, { onConflict: 'user_id,key' }).then(() => {})
-  }, [key, state, userId])
-
   const loadFromSupabase = useCallback(async (uid: string) => {
     const { data } = await supabase.from('user_data').select('value').eq('user_id', uid).eq('key', key).single()
     if (data?.value !== undefined && data?.value !== null) setState(data.value as T)
+    setSyncReady(true)
   }, [key])
 
   useEffect(() => {
     if (userId) loadFromSupabase(userId)
+    else setSyncReady(true)
   }, [userId, loadFromSupabase])
+
+  useEffect(() => {
+    try { localStorage.setItem(key, JSON.stringify(state)) } catch {}
+    if (!userId || !syncReady) return
+    supabase.from('user_data').upsert({ user_id: userId, key, value: state, updated_at: new Date().toISOString() }, { onConflict: 'user_id,key' }).then(() => {})
+  }, [key, state, userId, syncReady])
 
   return [state, setState]
 }
