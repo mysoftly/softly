@@ -433,7 +433,7 @@ function makePath(radii: number[]) {
   }).join('') + ' Z'
 }
 
-function WheelScreen({ onBack }: { onBack: () => void }) {
+function WheelScreen(_: { onBack: () => void }) {
   const [spheres, setSpheres] = useLS<string[]>('ls-spheres', [...DEFAULT_SPHERES])
   const [vals, setVals] = useLS<number[]>('ls-vals', new Array(DEFAULT_SPHERES.length).fill(5))
   const [editing, setEditing] = useState(false)
@@ -610,7 +610,7 @@ function panelDateLabel(dateKey: string): string {
   return new Date(y, m - 1, d).toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })
 }
 
-function TasksScreen({ onBack }: { onBack: () => void }) {
+function TasksScreen(_: { onBack: () => void }) {
   const now = new Date()
   const [viewYear, setViewYear] = useState(now.getFullYear())
   const [viewMonth, setViewMonth] = useState(now.getMonth())
@@ -875,7 +875,7 @@ function StarRating({ rating, onChange }: { rating: number; onChange?: (r: numbe
   )
 }
 
-function BooksScreen({ onBack }: { onBack: () => void }) {
+function BooksScreen(_: { onBack: () => void }) {
   const [books, setBooks] = useLS<Book[]>('ls-books', [])
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -1065,7 +1065,7 @@ function pluralRu(n: number, one: string, few: string, many: string) {
   return `${n} ${many}`
 }
 
-function FilmsScreen({ onBack }: { onBack: () => void }) {
+function FilmsScreen(_: { onBack: () => void }) {
   const [films, setFilms] = useLS<Film[]>('ls-films', [])
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -1349,7 +1349,7 @@ function ruMonth(month: number, year: number) {
 
 type TrackerView = 'week' | 'month'
 
-function TrackerScreen({ onBack }: { onBack: () => void }) {
+function TrackerScreen(_: { onBack: () => void }) {
   const today = new Date()
   const [habits, setHabits] = useLS<Habit[]>('ls-habits', [])
   const [log, setLog] = useLS<HabitLog>('ls-habit-log', {})
@@ -1612,7 +1612,7 @@ function CircleProgress({ done, total }: { done: number; total: number }) {
 
 interface GoalFormStep { text: string; mins: number | null; customMins: string }
 
-function GoalsScreen({ onBack }: { onBack: () => void }) {
+function GoalsScreen(_: { onBack: () => void }) {
   const [tab, setTab] = useState<GoalTab>('day')
   const [goals, setGoals] = useLS<Goal[]>('ls-goals', [])
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
@@ -1890,7 +1890,7 @@ function turnsAge(year: number, day: number, month: number): number {
   return age
 }
 
-function BirthdayScreen({ onBack }: { onBack: () => void }) {
+function BirthdayScreen(_: { onBack: () => void }) {
   const [people, setPeople] = useLS<BdPerson[]>('ls-birthdays', [])
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
@@ -2167,7 +2167,7 @@ function FinBarChart({ transactions }: { transactions: FinTransaction[] }) {
   )
 }
 
-function FinanceScreen({ onBack }: { onBack: () => void }) {
+function FinanceScreen(_: { onBack: () => void }) {
   const [transactions, setTransactions] = useLS<FinTransaction[]>('ls-finance', [])
   const [monthOffset, setMonthOffset] = useState(0)
   const [activeTab, setActiveTab] = useState<FinType>('expense')
@@ -2436,7 +2436,7 @@ function SleepChart({ entries }: { entries: SleepEntry[] }) {
   )
 }
 
-function HealthScreen({ onBack }: { onBack: () => void }) {
+function HealthScreen(_: { onBack: () => void }) {
   const [tab, setTab] = useState<HealthTab>('wellness')
 
   // ── Wellness
@@ -2718,7 +2718,7 @@ function relShortDate(dateStr: string): string {
   return `${Number(d)} ${months[Number(m) - 1]}`
 }
 
-function RelationsScreen({ onBack }: { onBack: () => void }) {
+function RelationsScreen(_: { onBack: () => void }) {
   const [contacts, setContacts]   = useLS<RelContact[]>('ls-contacts', [])
   const [catFilter, setCatFilter] = useState<RelCategory>('all')
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
@@ -3016,7 +3016,7 @@ const SKILL_CATS: { key: SkillCat; label: string }[] = [
   { key: 'physical', label: '💪 Физический'  },
 ]
 
-function SelfScreen({ onBack }: { onBack: () => void }) {
+function SelfScreen(_: { onBack: () => void }) {
   const [tab, setTab] = useState<SelfTab>('courses')
 
   // Courses state
@@ -3575,7 +3575,7 @@ interface WorkNote {
 
 const SHIFT_COLORS = ['#E0BFB6', '#9B8B84', '#B8C9B0', '#B0BED4', '#D4B0C9', '#D4CDB0', '#C9B0B0', '#B0C9C9']
 
-function WorkScreen({ onBack }: { onBack: () => void }) {
+function WorkScreen(_: { onBack: () => void }) {
   const [tab, setTab] = useState<WorkTab>('schedule')
 
   // Schedule
@@ -3888,7 +3888,7 @@ interface StudyTask {
   done: boolean
 }
 
-function StudyScreen({ onBack }: { onBack: () => void }) {
+function StudyScreen(_: { onBack: () => void }) {
   const [tab, setTab] = useState<StudyTab>('schedule')
   const [weekOffset, setWeekOffset] = useState(0)
 
@@ -4270,7 +4270,7 @@ const SEASON_CONFIG: Record<Season, {
   },
 }
 
-function ChecklistsScreen({ onBack }: { onBack: () => void }) {
+function ChecklistsScreen(_: { onBack: () => void }) {
   const [openSeason, setOpenSeason] = useState<Season | null>(null)
   const [lists, setLists] = useLS<Record<Season, CheckItem[]>>('ls-checklists', { spring: [], summer: [], autumn: [], winter: [] })
   const [newText, setNewText] = useState('')
@@ -4553,7 +4553,7 @@ function ChecklistsScreen({ onBack }: { onBack: () => void }) {
 const WISH_EMOJIS = ['🌟', '💫', '✨', '🎀', '🌸', '🦋', '🍀', '🎯', '💎', '🌈']
 const PRIORITY_LABELS: Record<WishPriority, string> = { high: '🔥 Очень хочу', medium: '⭐ Хочу', low: '💭 Когда-нибудь' }
 
-function WishlistScreen({ onBack }: { onBack: () => void }) {
+function WishlistScreen(_: { onBack: () => void }) {
   const [items, setItems] = useLS<WishItem[]>('ls-wishlist', [])
   const [showForm, setShowForm] = useState(false)
   const [editId, setEditId] = useState<number | null>(null)
