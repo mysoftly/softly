@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
 import './styles.css'
 import { supabase } from './supabase'
 import type { User } from '@supabase/supabase-js'
@@ -119,12 +119,18 @@ function AuthScreen({ onAuth }: { onAuth: (user: User) => void }) {
 }
 
 // ── localStorage + Supabase hook ───────────────────────────────────────────
+// Логика: побеждает запись с более новой временной меткой (timestamp).
+// Это исключает затирание данных при нестабильной сети.
 function useLS<T>(key: string, init: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+  const tsKey = key + ':ts'
+
   const [state, setState] = useState<T>(() => {
     try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : init } catch { return init }
   })
   const [userId, setUserId] = useState<string | null>(null)
   const [syncReady, setSyncReady] = useState(false)
+  // Флаг: данные только что пришли с сервера — не сохранять обратно
+  const fromServer = useRef(false)
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setUserId(data.session?.user?.id ?? null))
@@ -132,18 +138,34 @@ function useLS<T>(key: string, init: T): [T, React.Dispatch<React.SetStateAction
 
   const loadFromSupabase = useCallback(async (uid: string, attempt = 0) => {
     try {
-      const { data, error } = await supabase.from('user_data').select('value').eq('user_id', uid).eq('key', key).single()
+      const { data, error } = await supabase
+        .from('user_data')
+        .select('value, updated_at')
+        .eq('user_id', uid)
+        .eq('key', key)
+        .single()
+
       if (error && error.code !== 'PGRST116') {
-        // Сетевая ошибка — повторяем до 4 раз с паузой 4 секунды
         if (attempt < 4) setTimeout(() => loadFromSupabase(uid, attempt + 1), 4000)
         return
       }
-      if (data?.value !== undefined && data?.value !== null) setState(data.value as T)
+
+      if (data?.value !== undefined && data?.value !== null) {
+        const serverTs = new Date(data.updated_at).getTime()
+        const localTs = parseInt(localStorage.getItem(tsKey) || '0')
+        // Берём данные с более новой меткой
+        if (serverTs > localTs) {
+          fromServer.current = true
+          setState(data.value as T)
+          localStorage.setItem(tsKey, String(serverTs))
+        }
+        // Если локальные новее — оставляем их, они сохранятся в Supabase через syncReady
+      }
       setSyncReady(true)
     } catch {
       if (attempt < 4) setTimeout(() => loadFromSupabase(uid, attempt + 1), 4000)
     }
-  }, [key])
+  }, [key, tsKey])
 
   useEffect(() => {
     if (userId) loadFromSupabase(userId)
@@ -153,16 +175,20 @@ function useLS<T>(key: string, init: T): [T, React.Dispatch<React.SetStateAction
   useEffect(() => {
     try { localStorage.setItem(key, JSON.stringify(state)) } catch {}
     if (!userId || !syncReady) return
+    // Если данные пришли с сервера — не сохраняем обратно
+    if (fromServer.current) { fromServer.current = false; return }
+    const now = new Date().toISOString()
+    localStorage.setItem(tsKey, String(new Date(now).getTime()))
     const save = async (retries = 3): Promise<void> => {
       const { error } = await supabase.from('user_data')
-        .upsert({ user_id: userId, key, value: state, updated_at: new Date().toISOString() }, { onConflict: 'user_id,key' })
+        .upsert({ user_id: userId, key, value: state, updated_at: now }, { onConflict: 'user_id,key' })
       if (error && retries > 0) {
         await new Promise(r => setTimeout(r, 2000))
         return save(retries - 1)
       }
     }
     save()
-  }, [key, state, userId, syncReady])
+  }, [key, tsKey, state, userId, syncReady])
 
   return [state, setState]
 }
