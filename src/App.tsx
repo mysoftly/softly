@@ -4303,7 +4303,8 @@ function ChecklistsScreen(_: { onBack: () => void }) {
     const ITEM_H = 56
     const TOP_PAD = 230
     const COL_PAD = 60
-    const colW = (W - COL_PAD * 2) / COLS
+    const COL_GAP = 60
+    const colW = (W - COL_PAD * 2 - COL_GAP) / COLS
     const img = new Image()
     img.onload = () => renderCanvas(img)
     img.onerror = () => renderCanvas(null)
@@ -4379,7 +4380,7 @@ function ChecklistsScreen(_: { onBack: () => void }) {
     items.forEach((item, idx) => {
       const col = idx % COLS
       const row = Math.floor(idx / COLS)
-      const x = COL_PAD + col * colW
+      const x = COL_PAD + col * (colW + COL_GAP)
       const y = TOP_PAD + row * ITEM_H
 
       ctx.strokeStyle = cbColor[openSeason!]; ctx.lineWidth = 2
