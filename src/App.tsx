@@ -13,8 +13,21 @@ function AuthScreen({ onAuth }: { onAuth: (user: User) => void }) {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState('')
 
+  const passwordStrength = (p: string) => {
+    if (p.length < 8) return null
+    const has = (r: RegExp) => r.test(p)
+    const score = [has(/[A-Z]/), has(/[a-z]/), has(/[0-9]/), has(/[^A-Za-z0-9]/)].filter(Boolean).length
+    if (score <= 1) return { label: 'Слабый', color: '#e74c3c' }
+    if (score === 2) return { label: 'Средний', color: '#f39c12' }
+    return { label: 'Надёжный', color: '#27ae60' }
+  }
+  const strength = mode === 'register' ? passwordStrength(password) : null
+
   const submit = async () => {
     setError(''); setSuccess(''); setLoading(true)
+    if (mode === 'register' && password.length < 8) {
+      setError('Пароль должен быть минимум 8 символов'); setLoading(false); return
+    }
     try {
       if (mode === 'register') {
         const { data, error: e } = await supabase.auth.signUp({ email, password, options: { data: { name } } })
@@ -68,9 +81,17 @@ function AuthScreen({ onAuth }: { onAuth: (user: User) => void }) {
             style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid rgba(155,139,132,0.3)', background: 'rgba(255,255,255,0.7)', fontSize: 14, fontFamily: 'Jost, sans-serif', color: '#6E5F5D', marginBottom: 10, outline: 'none', boxSizing: 'border-box' }} />
 
           <input value={password} onChange={e => setPassword(e.target.value)}
-            placeholder="Пароль (минимум 6 символов)" type="password"
+            placeholder="Пароль (минимум 8 символов)" type="password"
             onKeyDown={e => e.key === 'Enter' && submit()}
-            style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid rgba(155,139,132,0.3)', background: 'rgba(255,255,255,0.7)', fontSize: 14, fontFamily: 'Jost, sans-serif', color: '#6E5F5D', marginBottom: 16, outline: 'none', boxSizing: 'border-box' }} />
+            style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid rgba(155,139,132,0.3)', background: 'rgba(255,255,255,0.7)', fontSize: 14, fontFamily: 'Jost, sans-serif', color: '#6E5F5D', marginBottom: strength ? 6 : 16, outline: 'none', boxSizing: 'border-box' }} />
+          {strength && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+              <div style={{ flex: 1, height: 4, borderRadius: 2, background: 'rgba(155,139,132,0.2)' }}>
+                <div style={{ height: '100%', borderRadius: 2, background: strength.color, width: strength.label === 'Слабый' ? '33%' : strength.label === 'Средний' ? '66%' : '100%', transition: 'all 0.3s' }} />
+              </div>
+              <span style={{ fontSize: 11, color: strength.color, minWidth: 60 }}>{strength.label}</span>
+            </div>
+          )}
 
           {error && <p style={{ color: '#c0392b', fontSize: 12, marginBottom: 12, textAlign: 'center' }}>{error}</p>}
           {success && <p style={{ color: '#27ae60', fontSize: 12, marginBottom: 12, textAlign: 'center' }}>{success}</p>}
