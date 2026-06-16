@@ -3169,12 +3169,12 @@ function SelfScreen(_: { onBack: () => void }) {
     )
   }, [insights, insightSearch])
 
-  const TABS: { key: SelfTab; label: string }[] = [
-    { key: 'courses',    label: 'Курсы'      },
-    { key: 'skills',     label: 'Навыки'     },
-    { key: 'ideas',      label: 'Идеи'       },
-    { key: 'reflection', label: 'Рефлексия'  },
-    { key: 'library',    label: 'Библиотека' },
+  const TABS: { key: SelfTab; label: string; emoji: string }[] = [
+    { key: 'courses',    label: 'Курсы',      emoji: '📚' },
+    { key: 'skills',     label: 'Навыки',     emoji: '⚡' },
+    { key: 'ideas',      label: 'Идеи',       emoji: '💡' },
+    { key: 'reflection', label: 'Рефлексия',  emoji: '🪞' },
+    { key: 'library',    label: 'Библиотека', emoji: '🗂️' },
   ]
 
   return (
@@ -3190,7 +3190,7 @@ function SelfScreen(_: { onBack: () => void }) {
           <button key={t.key}
             className={`self-tab${tab === t.key ? ' self-tab--active' : ''}`}
             onClick={() => setTab(t.key)}
-          >{t.label}</button>
+          ><span style={{ fontSize: 15 }}>{t.emoji}</span> {t.label}</button>
         ))}
       </div>
 

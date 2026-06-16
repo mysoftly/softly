@@ -2947,19 +2947,20 @@ body {
 
 .self-tabs {
   display: flex;
-  overflow-x: auto;
-  gap: 6px;
-  padding: 0 20px 14px;
-  scrollbar-width: none;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 20px 18px;
 }
-.self-tabs::-webkit-scrollbar { display: none; }
 
 .self-tab {
-  flex-shrink: 0;
-  padding: 7px 16px;
+  padding: 8px 18px;
   border-radius: 20px;
   border: 1.5px solid rgba(155,139,132,0.3);
   background: rgba(235,229,228,0.3);
+  display: flex;
+  align-items: center;
+  gap: 5px;
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
   font-family: 'Jost', sans-serif;
