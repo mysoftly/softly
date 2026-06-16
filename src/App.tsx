@@ -130,17 +130,18 @@ function useLS<T>(key: string, init: T): [T, React.Dispatch<React.SetStateAction
     supabase.auth.getSession().then(({ data }) => setUserId(data.session?.user?.id ?? null))
   }, [])
 
-  const loadFromSupabase = useCallback(async (uid: string) => {
+  const loadFromSupabase = useCallback(async (uid: string, attempt = 0) => {
     try {
       const { data, error } = await supabase.from('user_data').select('value').eq('user_id', uid).eq('key', key).single()
       if (error && error.code !== 'PGRST116') {
-        // Сетевая ошибка — не включаем sync чтобы не затереть данные пустым состоянием
+        // Сетевая ошибка — повторяем до 4 раз с паузой 4 секунды
+        if (attempt < 4) setTimeout(() => loadFromSupabase(uid, attempt + 1), 4000)
         return
       }
       if (data?.value !== undefined && data?.value !== null) setState(data.value as T)
       setSyncReady(true)
     } catch {
-      // Нет сети — не включаем sync
+      if (attempt < 4) setTimeout(() => loadFromSupabase(uid, attempt + 1), 4000)
     }
   }, [key])
 
@@ -152,8 +153,15 @@ function useLS<T>(key: string, init: T): [T, React.Dispatch<React.SetStateAction
   useEffect(() => {
     try { localStorage.setItem(key, JSON.stringify(state)) } catch {}
     if (!userId || !syncReady) return
-    supabase.from('user_data')
-      .upsert({ user_id: userId, key, value: state, updated_at: new Date().toISOString() }, { onConflict: 'user_id,key' })
+    const save = async (retries = 3): Promise<void> => {
+      const { error } = await supabase.from('user_data')
+        .upsert({ user_id: userId, key, value: state, updated_at: new Date().toISOString() }, { onConflict: 'user_id,key' })
+      if (error && retries > 0) {
+        await new Promise(r => setTimeout(r, 2000))
+        return save(retries - 1)
+      }
+    }
+    save()
   }, [key, state, userId, syncReady])
 
   return [state, setState]
