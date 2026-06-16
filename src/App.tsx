@@ -4308,7 +4308,6 @@ function ChecklistsScreen(_: { onBack: () => void }) {
     const img = new Image()
     img.onload = () => renderCanvas(img)
     img.onerror = () => renderCanvas(null)
-    img.crossOrigin = 'anonymous'
     img.src = new URL(`seasons/${openSeason}.jpg`, window.location.href).href
     return
     function renderCanvas(bgImg: HTMLImageElement | null) {
