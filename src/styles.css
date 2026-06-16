@@ -1570,7 +1570,6 @@ body {
   font-weight: 600;
   color: var(--brown-dark);
   letter-spacing: 0.01em;
-  text-transform: capitalize;
 }
 
 .tracker-nav {
@@ -1726,6 +1725,7 @@ body {
 .tracker-days {
   display: flex;
   gap: 4px;
+  justify-content: flex-end;
 }
 
 .tracker-circle {

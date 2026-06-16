@@ -1344,7 +1344,8 @@ function calcStreak(habitId: number, log: HabitLog): number {
 }
 
 function ruMonth(month: number, year: number) {
-  return new Date(year, month, 1).toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })
+  const s = new Date(year, month, 1).toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })
+  return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
 type TrackerView = 'week' | 'month'
@@ -1419,6 +1420,10 @@ function TrackerScreen(_: { onBack: () => void }) {
 
   return (
     <div className="tracker-screen">
+
+      <div className="books-header">
+        <h1 className="books-title">Трекер привычек</h1>
+      </div>
 
       {/* view switcher */}
       <div className="tracker-view-switch">
