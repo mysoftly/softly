@@ -3675,7 +3675,6 @@ function WorkScreen(_: { onBack: () => void }) {
 
   return (
     <div className="detail-screen">
-      <button className="back-btn" onClick={onBack}>← Назад</button>
       <h1 className="detail-title" style={{ marginBottom: 16 }}>Работа</h1>
 
       {/* Tabs */}
@@ -3973,7 +3972,6 @@ function StudyScreen(_: { onBack: () => void }) {
 
   return (
     <div className="detail-screen">
-      <button className="back-btn" onClick={onBack}>← Назад</button>
       <h1 className="detail-title" style={{ marginBottom: 16 }}>Учёба</h1>
 
       {/* Tabs */}
@@ -4519,7 +4517,6 @@ function ChecklistsScreen(_: { onBack: () => void }) {
   // Main screen — 4 season cards
   return (
     <div className="detail-screen">
-      <button className="back-btn" onClick={onBack}>← Назад</button>
       <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 26, color: '#6E5F5D', marginBottom: 6, padding: '0 20px' }}>Чек-листы</div>
       <div style={{ fontFamily: 'Jost, sans-serif', fontSize: 13, color: '#9B8B84', marginBottom: 24, padding: '0 20px' }}>Выбери сезон</div>
       <div style={{ padding: '0 16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
@@ -4605,7 +4602,6 @@ function WishlistScreen(_: { onBack: () => void }) {
 
   return (
     <div className="detail-screen">
-      <button className="back-btn" onClick={onBack}>← Назад</button>
       <h1 className="detail-title" style={{ marginBottom: 4 }}>Список желаний</h1>
       <p style={{ textAlign: 'center', color: '#9B8B84', fontSize: 13, marginBottom: 16 }}>
         Исполнилось: {fulfilled.length} ✨ · Осталось: {items.filter(w => !w.fulfilled).length}
