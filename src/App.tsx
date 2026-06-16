@@ -1091,6 +1091,14 @@ interface Film {
   date: string
 }
 
+interface WatchlistItem {
+  id: number
+  type: FilmType
+  title: string
+  genres: string[]
+  note: string
+}
+
 const FILM_GENRES = ['Драма','Комедия','Триллер','Ужасы','Фантастика','Романтика','Документальный','Анимация','Другое']
 
 const FILM_GRADS = [
@@ -1109,7 +1117,9 @@ function pluralRu(n: number, one: string, few: string, many: string) {
 }
 
 function FilmsScreen(_: { onBack: () => void }) {
+  const [filmTab, setFilmTab] = useState<'watched' | 'watchlist'>('watched')
   const [films, setFilms] = useLS<Film[]>('ls-films', [])
+  const [watchlist, setWatchlist] = useLS<WatchlistItem[]>('ls-watchlist', [])
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [formType, setFormType] = useState<FilmType>('film')
@@ -1118,6 +1128,7 @@ function FilmsScreen(_: { onBack: () => void }) {
   const [formRating, setFormRating] = useState(5)
   const [formSeasons, setFormSeasons] = useState('')
   const [formEpisodes, setFormEpisodes] = useState('')
+  const [formNote, setFormNote] = useState('')
   const [filmsSearch, setFilmsSearch] = useState('')
 
   const toggleGenre = (g: string) =>
@@ -1126,11 +1137,11 @@ function FilmsScreen(_: { onBack: () => void }) {
   const resetForm = () => {
     setFormType('film')
     setFormTitle('')
-
     setFormGenres([])
     setFormRating(5)
     setFormSeasons('')
     setFormEpisodes('')
+    setFormNote('')
   }
 
   const openAdd = () => { setEditingId(null); resetForm(); setShowForm(true) }
@@ -1174,6 +1185,43 @@ function FilmsScreen(_: { onBack: () => void }) {
 
   const deleteFilm = (id: number) => setFilms(prev => prev.filter(f => f.id !== id))
 
+  // Вишлист
+  const saveWatchlistItem = () => {
+    if (!formTitle.trim()) return
+    if (editingId !== null) {
+      setWatchlist(prev => prev.map(w => w.id === editingId
+        ? { ...w, type: formType, title: formTitle.trim(), genres: formGenres, note: formNote.trim() }
+        : w))
+    } else {
+      setWatchlist(prev => [{ id: Date.now(), type: formType, title: formTitle.trim(), genres: formGenres, note: formNote.trim() }, ...prev])
+    }
+    closeForm()
+  }
+
+  const openEditWatchlist = (w: WatchlistItem) => {
+    setEditingId(w.id)
+    setFormType(w.type)
+    setFormTitle(w.title)
+    setFormGenres([...w.genres])
+    setFormNote(w.note)
+    setShowForm(true)
+  }
+
+  const deleteWatchlistItem = (id: number) => setWatchlist(prev => prev.filter(w => w.id !== id))
+
+  const markAsWatched = (w: WatchlistItem) => {
+    setWatchlist(prev => prev.filter(x => x.id !== w.id))
+    setFilms(prev => [{
+      id: Date.now(),
+      type: w.type,
+      title: w.title,
+      genres: w.genres,
+      rating: 5,
+      date: new Date().toLocaleDateString('ru-RU', { day: 'numeric', month: 'long', year: 'numeric' }),
+    }, ...prev])
+    setFilmTab('watched')
+  }
+
   const filmCount = films.filter(f => f.type === 'film').length
   const seriesCount = films.filter(f => f.type === 'series').length
 
@@ -1191,151 +1239,175 @@ function FilmsScreen(_: { onBack: () => void }) {
 
       <div className="books-header">
         <h1 className="books-title">Фильмы и сериалы</h1>
-        <p className="books-count">
+      </div>
+
+      {/* Табы */}
+      <div className="self-tabs" style={{ margin: '0 16px 16px' }}>
+        <button
+          className={`self-tab-btn${filmTab === 'watched' ? ' self-tab-btn--active' : ''}`}
+          onClick={() => { setFilmTab('watched'); setShowForm(false) }}
+        >🎬 Просмотрено</button>
+        <button
+          className={`self-tab-btn${filmTab === 'watchlist' ? ' self-tab-btn--active' : ''}`}
+          onClick={() => { setFilmTab('watchlist'); setShowForm(false) }}
+        >📌 Хочу посмотреть</button>
+      </div>
+
+      {/* ── Вкладка Просмотрено ── */}
+      {filmTab === 'watched' && <>
+        <p className="books-count" style={{ textAlign: 'center', marginBottom: 8 }}>
           {filmCount > 0 && `Фильмов: ${filmCount}`}
           {filmCount > 0 && seriesCount > 0 && ' · '}
           {seriesCount > 0 && `Сериалов: ${seriesCount}`}
           {films.length === 0 && 'Ничего не добавлено'}
         </p>
-      </div>
 
-      {films.length > 0 && (
-        <input
-          className="books-search"
-          type="text"
-          placeholder="Поиск по названию..."
-          value={filmsSearch}
-          onChange={e => setFilmsSearch(e.target.value)}
-        />
-      )}
+        {films.length > 0 && (
+          <input className="books-search" type="text" placeholder="Поиск по названию..."
+            value={filmsSearch} onChange={e => setFilmsSearch(e.target.value)} />
+        )}
 
-      {films.length === 0 && !showForm && (
-        <p className="books-empty">Твой кинозал пуст ✨</p>
-      )}
+        {films.length === 0 && !showForm && <p className="books-empty">Твой кинозал пуст ✨</p>}
+        {films.length > 0 && filtered.length === 0 && <p className="books-empty">Ничего не найдено</p>}
 
-      {films.length > 0 && filtered.length === 0 && (
-        <p className="books-empty">Ничего не найдено</p>
-      )}
-
-      <div className="books-list">
-        {filtered.map((film, idx) => (
-          <div
-            key={film.id}
-            className="book-card"
-            style={{ background: FILM_GRADS[idx % FILM_GRADS.length] }}
-          >
-            <div className="book-card-top">
-              <div className="book-card-info">
-                <h3 className="book-card-title">{film.title}</h3>
-
+        <div className="books-list">
+          {filtered.map((film, idx) => (
+            <div key={film.id} className="book-card" style={{ background: FILM_GRADS[idx % FILM_GRADS.length] }}>
+              <div className="book-card-top">
+                <div className="book-card-info">
+                  <h3 className="book-card-title">{film.title}</h3>
+                </div>
+                <div className="book-card-actions">
+                  <button className="book-edit" onClick={() => openEdit(film)}>✏️</button>
+                  <button className="book-delete" onClick={() => deleteFilm(film.id)}>×</button>
+                </div>
               </div>
-              <div className="book-card-actions">
-                <button className="book-edit" onClick={() => openEdit(film)}>✏️</button>
-                <button className="book-delete" onClick={() => deleteFilm(film.id)}>×</button>
+              {film.genres.length > 0 && (
+                <div className="film-card-genres">
+                  {film.genres.map(g => <span key={g} className="film-genre-tag">{g}</span>)}
+                </div>
+              )}
+              <div className="film-card-footer">
+                <StarRating rating={film.rating} />
+                <div className="film-card-right">
+                  {film.type === 'series' && (film.seasons != null || film.episodes != null) && (
+                    <span className="film-series-info">
+                      📺{film.seasons != null ? ` ${pluralRu(film.seasons,'сезон','сезона','сезонов')}` : ''}
+                      {film.seasons != null && film.episodes != null ? ' · ' : ''}
+                      {film.episodes != null ? pluralRu(film.episodes,'серия','серии','серий') : ''}
+                    </span>
+                  )}
+                  <span className="book-date">{film.date}</span>
+                </div>
               </div>
             </div>
-            {film.genres.length > 0 && (
-              <div className="film-card-genres">
-                {film.genres.map(g => (
-                  <span key={g} className="film-genre-tag">{g}</span>
-                ))}
+          ))}
+        </div>
+
+        {showForm && (
+          <div className="books-form">
+            <h2 className="books-form-title">{formLabel}</h2>
+            <div className="film-type-switch">
+              <button type="button" className={`film-type-btn${formType === 'film' ? ' film-type-btn--active' : ''}`} onClick={() => setFormType('film')}>Фильм</button>
+              <button type="button" className={`film-type-btn${formType === 'series' ? ' film-type-btn--active' : ''}`} onClick={() => setFormType('series')}>Сериал</button>
+            </div>
+            <input className="books-field" placeholder="Название *" value={formTitle}
+              onChange={e => setFormTitle(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') saveFilm() }} />
+            {formType === 'series' && (
+              <div className="film-series-fields">
+                <input className="books-field" type="number" min="1" placeholder="Сезонов" value={formSeasons} onChange={e => setFormSeasons(e.target.value)} />
+                <input className="books-field" type="number" min="1" placeholder="Серий" value={formEpisodes} onChange={e => setFormEpisodes(e.target.value)} />
               </div>
             )}
-            <div className="film-card-footer">
-              <StarRating rating={film.rating} />
-              <div className="film-card-right">
-                {film.type === 'series' && (film.seasons != null || film.episodes != null) && (
-                  <span className="film-series-info">
-                    📺{film.seasons != null ? ` ${pluralRu(film.seasons,'сезон','сезона','сезонов')}` : ''}
-                    {film.seasons != null && film.episodes != null ? ' · ' : ''}
-                    {film.episodes != null ? pluralRu(film.episodes,'серия','серии','серий') : ''}
-                  </span>
-                )}
-                <span className="book-date">{film.date}</span>
+            <div>
+              <p className="books-form-label" style={{ marginBottom: 8 }}>Жанры</p>
+              <div className="film-genres">
+                {FILM_GENRES.map(g => (
+                  <button key={g} type="button" className={`film-genre-btn${formGenres.includes(g) ? ' film-genre-btn--active' : ''}`} onClick={() => toggleGenre(g)}>{g}</button>
+                ))}
               </div>
             </div>
-          </div>
-        ))}
-      </div>
-
-      {showForm && (
-        <div className="books-form">
-          <h2 className="books-form-title">{formLabel}</h2>
-
-          <div className="film-type-switch">
-            <button
-              type="button"
-              className={`film-type-btn${formType === 'film' ? ' film-type-btn--active' : ''}`}
-              onClick={() => setFormType('film')}
-            >Фильм</button>
-            <button
-              type="button"
-              className={`film-type-btn${formType === 'series' ? ' film-type-btn--active' : ''}`}
-              onClick={() => setFormType('series')}
-            >Сериал</button>
-          </div>
-
-          <input
-            className="books-field"
-            placeholder="Название *"
-            value={formTitle}
-            onChange={e => setFormTitle(e.target.value)}
-            onKeyDown={e => { if (e.key === 'Enter') saveFilm() }}
-          />
-          {formType === 'series' && (
-            <div className="film-series-fields">
-              <input
-                className="books-field"
-                type="number"
-                min="1"
-                placeholder="Сезонов"
-                value={formSeasons}
-                onChange={e => setFormSeasons(e.target.value)}
-              />
-              <input
-                className="books-field"
-                type="number"
-                min="1"
-                placeholder="Серий"
-                value={formEpisodes}
-                onChange={e => setFormEpisodes(e.target.value)}
-              />
+            <div className="books-form-stars">
+              <span className="books-form-label">Оценка</span>
+              <StarRating rating={formRating} onChange={setFormRating} />
             </div>
-          )}
-
-          <div>
-            <p className="books-form-label" style={{ marginBottom: 8 }}>Жанры</p>
-            <div className="film-genres">
-              {FILM_GENRES.map(g => (
-                <button
-                  key={g}
-                  type="button"
-                  className={`film-genre-btn${formGenres.includes(g) ? ' film-genre-btn--active' : ''}`}
-                  onClick={() => toggleGenre(g)}
-                >{g}</button>
-              ))}
+            <div className="books-form-actions">
+              <button className="books-cancel-btn" onClick={closeForm}>Отмена</button>
+              <button className="books-save-btn" onClick={saveFilm} disabled={!formTitle.trim()}>Сохранить</button>
             </div>
           </div>
+        )}
 
-          <div className="books-form-stars">
-            <span className="books-form-label">Оценка</span>
-            <StarRating rating={formRating} onChange={setFormRating} />
-          </div>
+        {!showForm && <button className="books-fab" onClick={openAdd}>+</button>}
+      </>}
 
-          <div className="books-form-actions">
-            <button className="books-cancel-btn" onClick={closeForm}>Отмена</button>
-            <button
-              className="books-save-btn"
-              onClick={saveFilm}
-              disabled={!formTitle.trim()}
-            >Сохранить</button>
-          </div>
+      {/* ── Вкладка Хочу посмотреть ── */}
+      {filmTab === 'watchlist' && <>
+        <p className="books-count" style={{ textAlign: 'center', marginBottom: 8 }}>
+          {watchlist.length === 0 ? 'Список пуст' : `${watchlist.length} ${watchlist.length === 1 ? 'позиция' : watchlist.length < 5 ? 'позиции' : 'позиций'}`}
+        </p>
+
+        {watchlist.length === 0 && !showForm && (
+          <p className="books-empty">Добавь фильмы и сериалы, которые хочешь посмотреть 🎞️</p>
+        )}
+
+        <div className="books-list">
+          {watchlist.map((w, idx) => (
+            <div key={w.id} className="book-card" style={{ background: FILM_GRADS[idx % FILM_GRADS.length] }}>
+              <div className="book-card-top">
+                <div className="book-card-info">
+                  <span style={{ fontSize: 11, color: '#9B8B84', marginBottom: 2, display: 'block' }}>
+                    {w.type === 'film' ? '🎬 Фильм' : '📺 Сериал'}
+                  </span>
+                  <h3 className="book-card-title">{w.title}</h3>
+                </div>
+                <div className="book-card-actions">
+                  <button className="book-edit" onClick={() => openEditWatchlist(w)}>✏️</button>
+                  <button className="book-delete" onClick={() => deleteWatchlistItem(w.id)}>×</button>
+                </div>
+              </div>
+              {w.genres.length > 0 && (
+                <div className="film-card-genres">
+                  {w.genres.map(g => <span key={g} className="film-genre-tag">{g}</span>)}
+                </div>
+              )}
+              {w.note && <p style={{ fontSize: 12, color: '#9B8B84', margin: '6px 0 0', fontStyle: 'italic' }}>{w.note}</p>}
+              <button
+                onClick={() => markAsWatched(w)}
+                style={{ marginTop: 10, width: '100%', padding: '8px', borderRadius: 10, border: 'none', background: 'rgba(110,95,93,0.12)', color: '#6E5F5D', fontSize: 13, cursor: 'pointer', fontFamily: 'Jost, sans-serif' }}
+              >✓ Уже посмотрела</button>
+            </div>
+          ))}
         </div>
-      )}
 
-      {!showForm && (
-        <button className="books-fab" onClick={openAdd}>+</button>
-      )}
+        {showForm && (
+          <div className="books-form">
+            <h2 className="books-form-title">{editingId !== null ? 'Редактировать' : 'Хочу посмотреть'}</h2>
+            <div className="film-type-switch">
+              <button type="button" className={`film-type-btn${formType === 'film' ? ' film-type-btn--active' : ''}`} onClick={() => setFormType('film')}>Фильм</button>
+              <button type="button" className={`film-type-btn${formType === 'series' ? ' film-type-btn--active' : ''}`} onClick={() => setFormType('series')}>Сериал</button>
+            </div>
+            <input className="books-field" placeholder="Название *" value={formTitle}
+              onChange={e => setFormTitle(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') saveWatchlistItem() }} />
+            <div>
+              <p className="books-form-label" style={{ marginBottom: 8 }}>Жанры</p>
+              <div className="film-genres">
+                {FILM_GENRES.map(g => (
+                  <button key={g} type="button" className={`film-genre-btn${formGenres.includes(g) ? ' film-genre-btn--active' : ''}`} onClick={() => toggleGenre(g)}>{g}</button>
+                ))}
+              </div>
+            </div>
+            <input className="books-field" placeholder="Заметка (необязательно)" value={formNote}
+              onChange={e => setFormNote(e.target.value)} />
+            <div className="books-form-actions">
+              <button className="books-cancel-btn" onClick={closeForm}>Отмена</button>
+              <button className="books-save-btn" onClick={saveWatchlistItem} disabled={!formTitle.trim()}>Сохранить</button>
+            </div>
+          </div>
+        )}
+
+        {!showForm && <button className="books-fab" onClick={openAdd}>+</button>}
+      </>}
     </div>
   )
 }
