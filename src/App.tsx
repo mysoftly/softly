@@ -1,12 +1,116 @@
-import { useState, useMemo, useEffect } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import './styles.css'
+import { supabase } from './supabase'
+import type { User } from '@supabase/supabase-js'
 
-// ── localStorage hook ──────────────────────────────────────────────────────
+// ── Auth Screen ────────────────────────────────────────────────────────────
+function AuthScreen({ onAuth }: { onAuth: (user: User) => void }) {
+  const [mode, setMode] = useState<'login' | 'register'>('login')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [name, setName] = useState('')
+  const [error, setError] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [success, setSuccess] = useState('')
+
+  const submit = async () => {
+    setError(''); setSuccess(''); setLoading(true)
+    try {
+      if (mode === 'register') {
+        const { data, error: e } = await supabase.auth.signUp({ email, password, options: { data: { name } } })
+        if (e) throw e
+        if (data.user && !data.session) {
+          setSuccess('Письмо с подтверждением отправлено на почту! Проверьте email.')
+        } else if (data.user) {
+          onAuth(data.user)
+        }
+      } else {
+        const { data, error: e } = await supabase.auth.signInWithPassword({ email, password })
+        if (e) throw e
+        if (data.user) onAuth(data.user)
+      }
+    } catch (e: any) {
+      const msg = e?.message || ''
+      if (msg.includes('Invalid login')) setError('Неверный email или пароль')
+      else if (msg.includes('already registered')) setError('Этот email уже зарегистрирован')
+      else if (msg.includes('Password should')) setError('Пароль должен быть минимум 6 символов')
+      else setError(msg || 'Что-то пошло не так')
+    }
+    setLoading(false)
+  }
+
+  return (
+    <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+      <div style={{ width: '100%', maxWidth: 360 }}>
+        <div style={{ textAlign: 'center', marginBottom: 40 }}>
+          <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 48, fontWeight: 300, color: '#6E5F5D', letterSpacing: '0.05em' }}>Softly</h1>
+          <p style={{ color: '#9B8B84', fontSize: 13, marginTop: 4 }}>твой личный планер</p>
+        </div>
+
+        <div style={{ background: 'rgba(255,255,255,0.6)', borderRadius: 24, padding: 28, backdropFilter: 'blur(20px)', border: '1px solid rgba(255,255,255,0.7)', boxShadow: '0 8px 32px rgba(110,95,93,0.1)' }}>
+          <div style={{ display: 'flex', background: 'rgba(235,229,228,0.5)', borderRadius: 12, padding: 3, marginBottom: 24 }}>
+            {(['login', 'register'] as const).map(m => (
+              <button key={m} onClick={() => { setMode(m); setError(''); setSuccess('') }}
+                style={{ flex: 1, padding: '8px 0', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 13, fontFamily: 'Jost, sans-serif', transition: 'all 0.2s', background: mode === m ? '#fff' : 'transparent', color: mode === m ? '#6E5F5D' : '#9B8B84', boxShadow: mode === m ? '0 1px 4px rgba(110,95,93,0.12)' : 'none' }}>
+                {m === 'login' ? 'Войти' : 'Регистрация'}
+              </button>
+            ))}
+          </div>
+
+          {mode === 'register' && (
+            <input value={name} onChange={e => setName(e.target.value)}
+              placeholder="Твоё имя"
+              style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid rgba(155,139,132,0.3)', background: 'rgba(255,255,255,0.7)', fontSize: 14, fontFamily: 'Jost, sans-serif', color: '#6E5F5D', marginBottom: 10, outline: 'none', boxSizing: 'border-box' }} />
+          )}
+
+          <input value={email} onChange={e => setEmail(e.target.value)}
+            placeholder="Email" type="email"
+            style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid rgba(155,139,132,0.3)', background: 'rgba(255,255,255,0.7)', fontSize: 14, fontFamily: 'Jost, sans-serif', color: '#6E5F5D', marginBottom: 10, outline: 'none', boxSizing: 'border-box' }} />
+
+          <input value={password} onChange={e => setPassword(e.target.value)}
+            placeholder="Пароль (минимум 6 символов)" type="password"
+            onKeyDown={e => e.key === 'Enter' && submit()}
+            style={{ width: '100%', padding: '12px 16px', borderRadius: 12, border: '1px solid rgba(155,139,132,0.3)', background: 'rgba(255,255,255,0.7)', fontSize: 14, fontFamily: 'Jost, sans-serif', color: '#6E5F5D', marginBottom: 16, outline: 'none', boxSizing: 'border-box' }} />
+
+          {error && <p style={{ color: '#c0392b', fontSize: 12, marginBottom: 12, textAlign: 'center' }}>{error}</p>}
+          {success && <p style={{ color: '#27ae60', fontSize: 12, marginBottom: 12, textAlign: 'center' }}>{success}</p>}
+
+          <button onClick={submit} disabled={loading}
+            style={{ width: '100%', padding: '13px', borderRadius: 12, border: 'none', cursor: loading ? 'default' : 'pointer', background: '#9B8B84', color: '#fff', fontSize: 14, fontFamily: 'Jost, sans-serif', fontWeight: 500, opacity: loading ? 0.7 : 1 }}>
+            {loading ? '...' : mode === 'login' ? 'Войти' : 'Создать аккаунт'}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// ── localStorage + Supabase hook ───────────────────────────────────────────
 function useLS<T>(key: string, init: T): [T, React.Dispatch<React.SetStateAction<T>>] {
   const [state, setState] = useState<T>(() => {
     try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : init } catch { return init }
   })
-  useEffect(() => { try { localStorage.setItem(key, JSON.stringify(state)) } catch {} }, [key, state])
+  const [userId, setUserId] = useState<string | null>(null)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => setUserId(data.session?.user?.id ?? null))
+  }, [])
+
+  useEffect(() => {
+    try { localStorage.setItem(key, JSON.stringify(state)) } catch {}
+    if (!userId) return
+    supabase.from('user_data').upsert({ user_id: userId, key, value: state, updated_at: new Date().toISOString() }, { onConflict: 'user_id,key' }).then(() => {})
+  }, [key, state, userId])
+
+  const loadFromSupabase = useCallback(async (uid: string) => {
+    const { data } = await supabase.from('user_data').select('value').eq('user_id', uid).eq('key', key).single()
+    if (data?.value !== undefined && data?.value !== null) setState(data.value as T)
+  }, [key])
+
+  useEffect(() => {
+    if (userId) loadFromSupabase(userId)
+  }, [userId, loadFromSupabase])
+
   return [state, setState]
 }
 
@@ -4663,6 +4767,32 @@ function WishlistScreen({ onBack }: { onBack: () => void }) {
 // ── App ────────────────────────────────────────────────────────────────────
 
 export default function App() {
+  const [user, setUser] = useState<User | null>(null)
+  const [authLoading, setAuthLoading] = useState(true)
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data }) => {
+      setUser(data.session?.user ?? null)
+      setAuthLoading(false)
+    })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_e, session) => {
+      setUser(session?.user ?? null)
+    })
+    return () => subscription.unsubscribe()
+  }, [])
+
+  if (authLoading) return (
+    <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+      <p style={{ color: '#9B8B84', fontFamily: 'Jost, sans-serif' }}>Загрузка...</p>
+    </div>
+  )
+
+  if (!user) return <AuthScreen onAuth={setUser} />
+
+  return <MainApp user={user} />
+}
+
+function MainApp({ user }: { user: User }) {
   const [search, setSearch] = useState('')
   const [selectedCard, setSelectedCard] = useState<CardData | null>(null)
 
@@ -4732,9 +4862,11 @@ export default function App() {
               <div className="header-top">
                 <div>
                   <p className="date">{today}</p>
-                  <h1 className="title">Привет, Пончик! 👋</h1>
+                  <h1 className="title">Привет, {user.user_metadata?.name || user.email?.split('@')[0]}! 👋</h1>
                 </div>
-                <div className="avatar">А</div>
+                <div className="avatar" onClick={() => supabase.auth.signOut()} title="Выйти" style={{ cursor: 'pointer' }}>
+                  {(user.user_metadata?.name || user.email || 'U')[0].toUpperCase()}
+                </div>
               </div>
 
               <div className="search-wrap">
