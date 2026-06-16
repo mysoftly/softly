@@ -1469,12 +1469,38 @@ function calcStreak(habitId: number, log: HabitLog): number {
   return streak
 }
 
+function calcBestStreak(habitId: number, log: HabitLog): number {
+  const entries = Object.keys(log[habitId] || {}).filter(k => log[habitId][k]).sort()
+  if (entries.length === 0) return 0
+  let best = 1, cur = 1
+  for (let i = 1; i < entries.length; i++) {
+    const prev = new Date(entries[i - 1])
+    const curr = new Date(entries[i])
+    const diff = (curr.getTime() - prev.getTime()) / 86400000
+    if (diff === 1) { cur++; if (cur > best) best = cur }
+    else cur = 1
+  }
+  return best
+}
+
+function calcMonthCompletion(habitId: number, log: HabitLog, year: number, month: number) {
+  const today = new Date()
+  const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month
+  const totalDays = isCurrentMonth ? today.getDate() : new Date(year, month + 1, 0).getDate()
+  let done = 0
+  for (let d = 1; d <= totalDays; d++) {
+    const k = dateKey(new Date(year, month, d))
+    if (log[habitId]?.[k]) done++
+  }
+  return { done, total: totalDays, pct: totalDays === 0 ? 0 : Math.round((done / totalDays) * 100) }
+}
+
 function ruMonth(month: number, year: number) {
   const s = new Date(year, month, 1).toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })
   return s.charAt(0).toUpperCase() + s.slice(1)
 }
 
-type TrackerView = 'week' | 'month'
+type TrackerView = 'week' | 'month' | 'stats'
 
 function TrackerScreen(_: { onBack: () => void }) {
   const today = new Date()
@@ -1561,14 +1587,57 @@ function TrackerScreen(_: { onBack: () => void }) {
           className={`tracker-view-btn${viewMode === 'month' ? ' tracker-view-btn--active' : ''}`}
           onClick={() => setViewMode('month')}
         >Месяц</button>
+        <button
+          className={`tracker-view-btn${viewMode === 'stats' ? ' tracker-view-btn--active' : ''}`}
+          onClick={() => setViewMode('stats')}
+        >Статистика</button>
       </div>
 
       {/* nav + period */}
-      <div className="tracker-header">
-        <button className="tracker-nav" onClick={navPrev}>←</button>
-        <span className="tracker-month">{periodLabel}</span>
-        <button className="tracker-nav" onClick={navNext} disabled={navNextDisabled}>→</button>
-      </div>
+      {viewMode !== 'stats' && (
+        <div className="tracker-header">
+          <button className="tracker-nav" onClick={navPrev}>←</button>
+          <span className="tracker-month">{periodLabel}</span>
+          <button className="tracker-nav" onClick={navNext} disabled={navNextDisabled}>→</button>
+        </div>
+      )}
+
+      {/* stats view */}
+      {viewMode === 'stats' && (
+        <div className="tracker-stats-wrap">
+          {habits.length === 0 && (
+            <p className="books-empty">Добавь привычки, чтобы видеть статистику ✨</p>
+          )}
+          {habits.map(habit => {
+            const streak = calcStreak(habit.id, log)
+            const best = calcBestStreak(habit.id, log)
+            const now = new Date()
+            const { done, total, pct } = calcMonthCompletion(habit.id, log, now.getFullYear(), now.getMonth())
+            return (
+              <div key={habit.id} className="tracker-stat-card">
+                <div className="tracker-stat-header">
+                  <span className="tracker-habit-emoji">{habit.emoji}</span>
+                  <span className="tracker-habit-name">{habit.name}</span>
+                </div>
+                <div className="tracker-stat-month-label">
+                  {new Date().toLocaleDateString('ru-RU', { month: 'long' }).replace(/^./, c => c.toUpperCase())}
+                </div>
+                <div className="tracker-stat-bar-wrap">
+                  <div className="tracker-stat-bar">
+                    <div className="tracker-stat-bar-fill" style={{ width: `${pct}%` }} />
+                  </div>
+                  <span className="tracker-stat-pct">{pct}%</span>
+                </div>
+                <div className="tracker-stat-days">{done} из {total} дней</div>
+                <div className="tracker-stat-streaks">
+                  {streak > 0 && <span className="tracker-stat-badge">🔥 {streak} сейчас</span>}
+                  {best > 0 && <span className="tracker-stat-badge tracker-stat-badge--gold">🏆 {best} рекорд</span>}
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      )}
 
       {/* week day column headers */}
       {viewMode === 'week' && (
@@ -1585,11 +1654,11 @@ function TrackerScreen(_: { onBack: () => void }) {
         </div>
       )}
 
-      {habits.length === 0 && !showForm && (
+      {habits.length === 0 && !showForm && viewMode !== 'stats' && (
         <p className="books-empty">Добавь первую привычку ✨</p>
       )}
 
-      <div className="tracker-list">
+      <div className="tracker-list" style={{ display: viewMode === 'stats' ? 'none' : undefined }}>
         {habits.map(habit => {
           const streak = calcStreak(habit.id, log)
           return (
@@ -1687,7 +1756,7 @@ function TrackerScreen(_: { onBack: () => void }) {
         </div>
       )}
 
-      {!showForm && (
+      {!showForm && viewMode !== 'stats' && (
         <button className="books-fab" onClick={() => setShowForm(true)}>+</button>
       )}
     </div>

@@ -1781,6 +1781,99 @@ body {
 }
 
 /* Add form */
+/* ── Tracker Statistics ─────────────────────────────────────────────────── */
+.tracker-stats-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 12px 20px 100px;
+}
+
+.tracker-stat-card {
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.7);
+  border-radius: 20px;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  padding: 16px 18px;
+  box-shadow: 0 2px 12px rgba(110,95,93,0.07);
+}
+
+.tracker-stat-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.tracker-stat-month-label {
+  font-family: 'Jost', sans-serif;
+  font-size: 11px;
+  color: var(--brown-mid);
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.tracker-stat-bar-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.tracker-stat-bar {
+  flex: 1;
+  height: 8px;
+  border-radius: 6px;
+  background: rgba(110,95,93,0.12);
+  overflow: hidden;
+}
+
+.tracker-stat-bar-fill {
+  height: 100%;
+  border-radius: 6px;
+  background: linear-gradient(90deg, #9B8B84, #E0BFB6);
+  transition: width 0.4s ease;
+}
+
+.tracker-stat-pct {
+  font-family: 'Jost', sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--brown-dark);
+  min-width: 36px;
+  text-align: right;
+}
+
+.tracker-stat-days {
+  font-family: 'Jost', sans-serif;
+  font-size: 12px;
+  color: var(--brown-mid);
+  margin-bottom: 10px;
+}
+
+.tracker-stat-streaks {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.tracker-stat-badge {
+  font-family: 'Jost', sans-serif;
+  font-size: 12px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: rgba(155,139,132,0.12);
+  color: var(--brown-dark);
+}
+
+.tracker-stat-badge--gold {
+  background: rgba(224,191,182,0.35);
+}
+
+/* ── END Stats ──────────────────────────────────────────────────────────── */
+
 .tracker-form {
   margin: 16px 20px 0;
   padding: 16px;
