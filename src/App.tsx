@@ -1,6 +1,15 @@
 import { useState, useMemo, useEffect } from 'react'
 import './styles.css'
 
+// ── localStorage hook ──────────────────────────────────────────────────────
+function useLS<T>(key: string, init: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+  const [state, setState] = useState<T>(() => {
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : init } catch { return init }
+  })
+  useEffect(() => { try { localStorage.setItem(key, JSON.stringify(state)) } catch {} }, [key, state])
+  return [state, setState]
+}
+
 // ── Icons ──────────────────────────────────────────────────────────────────
 
 const SearchIcon = () => (
@@ -127,6 +136,13 @@ const WishlistIcon = () => (
   </svg>
 )
 
+const ChecklistIcon = () => (
+  <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+    <path d="M9 11l3 3L22 4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+    <path d="M21 12v7a2 2 0 01-2 2H5a2 2 0 01-2-2V5a2 2 0 012-2h11" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+  </svg>
+)
+
 // ── Data ───────────────────────────────────────────────────────────────────
 
 interface CardData {
@@ -243,6 +259,13 @@ const cards: CardData[] = [
     icon: <WishlistIcon />,
     bg: 'linear-gradient(225deg, rgba(155,139,132,0.22), rgba(235,229,228,0.42))',
   },
+  {
+    id: 17,
+    title: 'Чек-листы',
+    desc: 'По сезонам',
+    icon: <ChecklistIcon />,
+    bg: 'linear-gradient(135deg, rgba(224,191,182,0.35), rgba(235,229,228,0.4))',
+  },
 ]
 
 // ── Wheel Screen ──────────────────────────────────────────────────────────
@@ -271,8 +294,8 @@ function makePath(radii: number[]) {
 }
 
 function WheelScreen({ onBack }: { onBack: () => void }) {
-  const [spheres, setSpheres] = useState<string[]>([...DEFAULT_SPHERES])
-  const [vals, setVals] = useState<number[]>(() => new Array(DEFAULT_SPHERES.length).fill(5))
+  const [spheres, setSpheres] = useLS<string[]>('ls-spheres', [...DEFAULT_SPHERES])
+  const [vals, setVals] = useLS<number[]>('ls-vals', new Array(DEFAULT_SPHERES.length).fill(5))
   const [editing, setEditing] = useState(false)
   const [newSphere, setNewSphere] = useState('')
 
@@ -455,7 +478,7 @@ function TasksScreen({ onBack }: { onBack: () => void }) {
   const [viewYear, setViewYear] = useState(now.getFullYear())
   const [viewMonth, setViewMonth] = useState(now.getMonth())
   const [selectedDate, setSelectedDate] = useState<string | null>(null)
-  const [tasksData, setTasksData] = useState<TasksData>({})
+  const [tasksData, setTasksData] = useLS<TasksData>('ls-tasks-data', {})
   const [newText, setNewText] = useState('')
   const [newIcon, setNewIcon] = useState('✨')
 
@@ -619,7 +642,7 @@ interface ShoppingItem {
 }
 
 function ShoppingScreen() {
-  const [items, setItems] = useState<ShoppingItem[]>([])
+  const [items, setItems] = useLS<ShoppingItem[]>('ls-shopping', [])
   const [input, setInput] = useState('')
 
   const addItem = () => {
@@ -719,7 +742,7 @@ function StarRating({ rating, onChange }: { rating: number; onChange?: (r: numbe
 }
 
 function BooksScreen({ onBack }: { onBack: () => void }) {
-  const [books, setBooks] = useState<Book[]>([])
+  const [books, setBooks] = useLS<Book[]>('ls-books', [])
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [formTitle, setFormTitle] = useState('')
@@ -894,7 +917,7 @@ interface Film {
   date: string
 }
 
-const FILM_GENRES = ['Драма','Комедия','Триллер','Фантастика','Романтика','Документальный','Анимация','Другое']
+const FILM_GENRES = ['Драма','Комедия','Триллер','Ужасы','Фантастика','Романтика','Документальный','Анимация','Другое']
 
 const FILM_GRADS = [
   'linear-gradient(145deg, rgba(110,95,93,0.12), rgba(224,191,182,0.32))',
@@ -912,7 +935,7 @@ function pluralRu(n: number, one: string, few: string, many: string) {
 }
 
 function FilmsScreen({ onBack }: { onBack: () => void }) {
-  const [films, setFilms] = useState<Film[]>([])
+  const [films, setFilms] = useLS<Film[]>('ls-films', [])
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [formType, setFormType] = useState<FilmType>('film')
@@ -1200,8 +1223,8 @@ type TrackerView = 'week' | 'month'
 
 function TrackerScreen({ onBack }: { onBack: () => void }) {
   const today = new Date()
-  const [habits, setHabits] = useState<Habit[]>([])
-  const [log, setLog] = useState<HabitLog>({})
+  const [habits, setHabits] = useLS<Habit[]>('ls-habits', [])
+  const [log, setLog] = useLS<HabitLog>('ls-habit-log', {})
   const [viewMode, setViewMode] = useState<TrackerView>('week')
   const [weekOffset, setWeekOffset] = useState(0)
   const [monthOffset, setMonthOffset] = useState(0)
@@ -1466,7 +1489,7 @@ interface GoalFormStep { text: string; mins: number | null; customMins: string }
 
 function GoalsScreen({ onBack }: { onBack: () => void }) {
   const [tab, setTab] = useState<GoalTab>('day')
-  const [goals, setGoals] = useState<Goal[]>([])
+  const [goals, setGoals] = useLS<Goal[]>('ls-goals', [])
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
 
   // form state
@@ -1746,7 +1769,7 @@ function turnsAge(year: number, day: number, month: number): number {
 }
 
 function BirthdayScreen({ onBack }: { onBack: () => void }) {
-  const [people, setPeople] = useState<BdPerson[]>([])
+  const [people, setPeople] = useLS<BdPerson[]>('ls-birthdays', [])
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<number | null>(null)
   const [formEmoji, setFormEmoji] = useState(BD_EMOJIS[0])
@@ -1830,7 +1853,7 @@ function BirthdayScreen({ onBack }: { onBack: () => void }) {
               style={{ background: BOOK_GRADS[idx % BOOK_GRADS.length] }}
             >
               <div className="bd-card-top">
-                <span className="bd-emoji">{person.emoji}</span>
+                <span className="bd-emoji" style={isToday ? { filter: 'drop-shadow(0 0 6px #ff3b30)', background: 'rgba(255,59,48,0.15)', borderRadius: '50%', padding: '4px' } : {}}>{person.emoji}</span>
                 <div className="bd-info">
                   <h3 className="bd-name">{person.name}</h3>
                   <p className="bd-date">
@@ -2026,7 +2049,7 @@ function FinBarChart({ transactions }: { transactions: FinTransaction[] }) {
 }
 
 function FinanceScreen({ onBack }: { onBack: () => void }) {
-  const [transactions, setTransactions] = useState<FinTransaction[]>([])
+  const [transactions, setTransactions] = useLS<FinTransaction[]>('ls-finance', [])
   const [monthOffset, setMonthOffset] = useState(0)
   const [activeTab, setActiveTab] = useState<FinType>('expense')
   const [showForm, setShowForm] = useState(false)
@@ -2301,20 +2324,20 @@ function HealthScreen({ onBack }: { onBack: () => void }) {
   const [tab, setTab] = useState<HealthTab>('wellness')
 
   // ── Wellness
-  const [wellnessLog, setWellnessLog] = useState<WellnessEntry[]>([])
+  const [wellnessLog, setWellnessLog] = useLS<WellnessEntry[]>('ls-wellness', [])
   const [wMood,   setWMood]   = useState('')
   const [wEnergy, setWEnergy] = useState(5)
   const [wNote,   setWNote]   = useState('')
 
   // ── Sport
-  const [workouts,       setWorkouts]       = useState<WorkoutEntry[]>([])
+  const [workouts,       setWorkouts]       = useLS<WorkoutEntry[]>('ls-workouts', [])
   const [showWfForm,     setShowWfForm]     = useState(false)
   const [wfType,         setWfType]         = useState(WORKOUT_TYPES[0].key)
   const [wfMins,         setWfMins]         = useState('')
   const [wfDate,         setWfDate]         = useState(healthTodayStr)
 
   // ── Sleep
-  const [sleepLog,     setSleepLog]     = useState<SleepEntry[]>([])
+  const [sleepLog,     setSleepLog]     = useLS<SleepEntry[]>('ls-sleep', [])
   const [sBedtime,     setSBedtime]     = useState('23:00')
   const [sWakeup,      setSWakeup]      = useState('07:00')
   const [sQuality,     setSQuality]     = useState<SleepQuality>('ok')
@@ -2583,7 +2606,7 @@ function relShortDate(dateStr: string): string {
 }
 
 function RelationsScreen({ onBack }: { onBack: () => void }) {
-  const [contacts, setContacts]   = useState<RelContact[]>([])
+  const [contacts, setContacts]   = useLS<RelContact[]>('ls-contacts', [])
   const [catFilter, setCatFilter] = useState<RelCategory>('all')
   const [expandedIds, setExpandedIds] = useState<Set<number>>(new Set())
   const [showForm, setShowForm]   = useState(false)
@@ -2817,6 +2840,1826 @@ function RelationsScreen({ onBack }: { onBack: () => void }) {
   )
 }
 
+// ── Self-Development Screen ───────────────────────────────────────────────
+
+type SelfTab = 'courses' | 'skills' | 'ideas' | 'reflection' | 'library'
+
+type CoursePlatform = 'Udemy' | 'YouTube' | 'Книга' | 'Другое'
+type CourseStatus   = 'active' | 'done' | 'planned'
+interface Course {
+  id: number; title: string; platform: CoursePlatform
+  progress: number; status: CourseStatus; note: string
+}
+
+type SkillCat = 'tech' | 'creative' | 'social' | 'physical'
+interface Skill {
+  id: number; name: string; level: number; category: SkillCat
+}
+
+interface Idea {
+  id: number; text: string; date: string; done: boolean
+}
+
+interface WeekReflection {
+  weekKey: string   // "YYYY-WNN"
+  q1: string; q2: string; q3: string; q4: string
+}
+
+interface Insight {
+  id: number; title: string; body: string; tags: string[]
+  source: string; date: string
+}
+
+const REFL_QUESTIONS = [
+  'Что я узнала нового?',
+  'Что далось сложно?',
+  'Чем я горжусь?',
+  'Что хочу улучшить?',
+] as const
+
+function getWeekKey(offset: number): string {
+  const d = new Date()
+  d.setDate(d.getDate() - d.getDay() + 1 + offset * 7)  // Monday
+  const year = d.getFullYear()
+  const startOfYear = new Date(year, 0, 1)
+  const weekNum = Math.ceil(((d.getTime() - startOfYear.getTime()) / 86400000 + startOfYear.getDay() + 1) / 7)
+  return `${year}-W${String(weekNum).padStart(2, '0')}`
+}
+
+function getWeekLabel(offset: number): string {
+  const RU_MONTHS = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек']
+  const mon = new Date()
+  mon.setDate(mon.getDate() - mon.getDay() + 1 + offset * 7)
+  const sun = new Date(mon); sun.setDate(mon.getDate() + 6)
+  const fmt = (d: Date) => `${d.getDate()} ${RU_MONTHS[d.getMonth()]}`
+  return `${fmt(mon)} – ${fmt(sun)}`
+}
+
+const SELF_PLATFORMS: CoursePlatform[] = ['Udemy','YouTube','Книга','Другое']
+const COURSE_STATUS_MAP: Record<CourseStatus, string> = {
+  active: '📚 В процессе', done: '✅ Завершён', planned: '🔜 Запланирован',
+}
+const SKILL_CATS: { key: SkillCat; label: string }[] = [
+  { key: 'tech',     label: '💻 Технический' },
+  { key: 'creative', label: '🎨 Творческий'  },
+  { key: 'social',   label: '🗣️ Социальный'  },
+  { key: 'physical', label: '💪 Физический'  },
+]
+
+function SelfScreen({ onBack }: { onBack: () => void }) {
+  const [tab, setTab] = useState<SelfTab>('courses')
+
+  // Courses state
+  const [courses,   setCourses]   = useLS<Course[]>('ls-courses', [])
+  const [showCForm, setShowCForm] = useState(false)
+  const [editCId,   setEditCId]   = useState<number | null>(null)
+  const [cTitle,    setCTitle]    = useState('')
+  const [cPlatform, setCPlatform] = useState<CoursePlatform>('Udemy')
+  const [cProgress, setCProgress] = useState(0)
+  const [cStatus,   setCStatus]   = useState<CourseStatus>('planned')
+  const [cNote,     setCNote]     = useState('')
+
+  // Skills state
+  const [skills,   setSkills]   = useLS<Skill[]>('ls-skills', [])
+  const [showSForm, setShowSForm] = useState(false)
+  const [editSId,   setEditSId]   = useState<number | null>(null)
+  const [sName,    setSName]    = useState('')
+  const [sLevel,   setSLevel]   = useState(3)
+  const [sCat,     setSCat]     = useState<SkillCat>('tech')
+
+  // Ideas state
+  const [ideas,    setIdeas]    = useLS<Idea[]>('ls-ideas', [])
+  const [ideaText, setIdeaText] = useState('')
+
+  // Reflection state
+  const [reflOffset,  setReflOffset]  = useState(0)
+  const [reflData,    setReflData]    = useLS<Record<string, WeekReflection>>('ls-reflections', {})
+  const [reflQ,       setReflQ]       = useState<[string,string,string,string]>(['','','',''])
+  const [reflEditing, setReflEditing] = useState(true)
+
+  // Library state
+  const [insights,    setInsights]   = useLS<Insight[]>('ls-insights', [])
+  const [insightSearch, setInsightSearch] = useState('')
+  const [showIForm,   setShowIForm]  = useState(false)
+  const [editIId,     setEditIId]    = useState<number | null>(null)
+  const [iTitle,      setITitle]     = useState('')
+  const [iBody,       setIBody]      = useState('')
+  const [iTagInput,   setITagInput]  = useState('')
+  const [iTags,       setITags]      = useState<string[]>([])
+  const [iSource,     setISource]    = useState('')
+
+  const todayStr = new Date().toISOString().slice(0, 10)
+
+  // ── Courses handlers ─────────────────────────────────────
+  const resetCForm = () => { setCTitle(''); setCPlatform('Udemy'); setCProgress(0); setCStatus('planned'); setCNote('') }
+  const openAddCourse = () => { setEditCId(null); resetCForm(); setShowCForm(true) }
+  const openEditCourse = (c: Course) => {
+    setEditCId(c.id); setCTitle(c.title); setCPlatform(c.platform)
+    setCProgress(c.progress); setCStatus(c.status); setCNote(c.note)
+    setShowCForm(true)
+  }
+  const closeCForm = () => { setShowCForm(false); setEditCId(null); resetCForm() }
+  const saveCourse = () => {
+    if (!cTitle.trim()) return
+    if (editCId != null) {
+      setCourses(prev => prev.map(c => c.id !== editCId ? c : {
+        ...c, title: cTitle.trim(), platform: cPlatform, progress: cProgress, status: cStatus, note: cNote.trim()
+      }))
+    } else {
+      setCourses(prev => [...prev, { id: Date.now(), title: cTitle.trim(), platform: cPlatform, progress: cProgress, status: cStatus, note: cNote.trim() }])
+    }
+    closeCForm()
+  }
+  const deleteCourse = (id: number) => setCourses(prev => prev.filter(c => c.id !== id))
+
+  // ── Skills handlers ──────────────────────────────────────
+  const resetSForm = () => { setSName(''); setSLevel(3); setSCat('tech') }
+  const openAddSkill = () => { setEditSId(null); resetSForm(); setShowSForm(true) }
+  const openEditSkill = (s: Skill) => {
+    setEditSId(s.id); setSName(s.name); setSLevel(s.level); setSCat(s.category)
+    setShowSForm(true)
+  }
+  const closeSForm = () => { setShowSForm(false); setEditSId(null); resetSForm() }
+  const saveSkill = () => {
+    if (!sName.trim()) return
+    if (editSId != null) {
+      setSkills(prev => prev.map(s => s.id !== editSId ? s : { ...s, name: sName.trim(), level: sLevel, category: sCat }))
+    } else {
+      setSkills(prev => [...prev, { id: Date.now(), name: sName.trim(), level: sLevel, category: sCat }])
+    }
+    closeSForm()
+  }
+  const deleteSkill = (id: number) => setSkills(prev => prev.filter(s => s.id !== id))
+
+  // ── Ideas handlers ───────────────────────────────────────
+  const addIdea = () => {
+    if (!ideaText.trim()) return
+    setIdeas(prev => [{ id: Date.now(), text: ideaText.trim(), date: todayStr, done: false }, ...prev])
+    setIdeaText('')
+  }
+  const toggleIdeaDone = (id: number) =>
+    setIdeas(prev => prev.map(i => i.id !== id ? i : { ...i, done: !i.done }))
+  const deleteIdea = (id: number) => setIdeas(prev => prev.filter(i => i.id !== id))
+
+  // ── Reflection handlers ──────────────────────────────────
+  const reflWeekKey = getWeekKey(reflOffset)
+
+  useEffect(() => {
+    const saved = reflData[reflWeekKey]
+    setReflQ(saved ? [saved.q1, saved.q2, saved.q3, saved.q4] : ['','','',''])
+    setReflEditing(!saved)
+  }, [reflWeekKey])
+
+  const saveReflection = () => {
+    setReflData(prev => ({
+      ...prev,
+      [reflWeekKey]: { weekKey: reflWeekKey, q1: reflQ[0], q2: reflQ[1], q3: reflQ[2], q4: reflQ[3] }
+    }))
+    setReflEditing(false)
+  }
+
+  const setReflAnswer = (i: number, val: string) =>
+    setReflQ(prev => { const next = [...prev] as [string,string,string,string]; next[i] = val; return next })
+
+  // ── Library handlers ─────────────────────────────────────
+  const resetIForm = () => { setITitle(''); setIBody(''); setITagInput(''); setITags([]); setISource('') }
+  const openAddInsight = () => { setEditIId(null); resetIForm(); setShowIForm(true) }
+  const openEditInsight = (ins: Insight) => {
+    setEditIId(ins.id); setITitle(ins.title); setIBody(ins.body)
+    setITags(ins.tags); setITagInput(''); setISource(ins.source)
+    setShowIForm(true)
+  }
+  const closeIForm = () => { setShowIForm(false); setEditIId(null); resetIForm() }
+  const saveInsight = () => {
+    if (!iTitle.trim()) return
+    if (editIId != null) {
+      setInsights(prev => prev.map(ins => ins.id !== editIId ? ins : {
+        ...ins, title: iTitle.trim(), body: iBody.trim(), tags: iTags, source: iSource.trim()
+      }))
+    } else {
+      setInsights(prev => [{ id: Date.now(), title: iTitle.trim(), body: iBody.trim(), tags: iTags, source: iSource.trim(), date: todayStr }, ...prev])
+    }
+    closeIForm()
+  }
+  const deleteInsight = (id: number) => setInsights(prev => prev.filter(i => i.id !== id))
+
+  const addTag = () => {
+    const t = iTagInput.trim()
+    if (t && !iTags.includes(t)) setITags(prev => [...prev, t])
+    setITagInput('')
+  }
+  const removeTag = (t: string) => setITags(prev => prev.filter(x => x !== t))
+
+  const filteredInsights = useMemo(() => {
+    const q = insightSearch.toLowerCase().trim()
+    if (!q) return insights
+    return insights.filter(ins =>
+      ins.title.toLowerCase().includes(q) ||
+      ins.tags.some(t => t.toLowerCase().includes(q))
+    )
+  }, [insights, insightSearch])
+
+  const TABS: { key: SelfTab; label: string }[] = [
+    { key: 'courses',    label: 'Курсы'      },
+    { key: 'skills',     label: 'Навыки'     },
+    { key: 'ideas',      label: 'Идеи'       },
+    { key: 'reflection', label: 'Рефлексия'  },
+    { key: 'library',    label: 'Библиотека' },
+  ]
+
+  return (
+    <div className="books-screen">
+      <div className="tasks-topbar">
+        <button className="back-btn" onClick={onBack}>← Назад</button>
+      </div>
+
+      <div className="books-header">
+        <h1 className="books-title">Саморазвитие</h1>
+      </div>
+
+      {/* Tab strip */}
+      <div className="self-tabs">
+        {TABS.map(t => (
+          <button key={t.key}
+            className={`self-tab${tab === t.key ? ' self-tab--active' : ''}`}
+            onClick={() => setTab(t.key)}
+          >{t.label}</button>
+        ))}
+      </div>
+
+      {/* ── COURSES ── */}
+      {tab === 'courses' && (
+        <>
+          {courses.length === 0 && !showCForm && (
+            <p className="books-empty">Добавь первый курс 📚</p>
+          )}
+          <div className="books-list">
+            {courses.map((c, idx) => (
+              <div key={c.id} className="self-card" style={{ background: BOOK_GRADS[idx % BOOK_GRADS.length] }}>
+                <div className="book-card-top">
+                  <div className="self-card-info">
+                    <p className="self-card-title">{c.title}</p>
+                    <p className="self-card-meta">
+                      <span className="self-platform-tag">{c.platform}</span>
+                      <span className="self-status">{COURSE_STATUS_MAP[c.status]}</span>
+                    </p>
+                  </div>
+                  <div className="book-card-actions">
+                    <button className="book-edit" onClick={() => openEditCourse(c)}>✏️</button>
+                    <button className="book-delete" onClick={() => deleteCourse(c.id)}>×</button>
+                  </div>
+                </div>
+                {/* Progress bar */}
+                <div className="self-progress-wrap">
+                  <div className="self-progress-bar">
+                    <div className="self-progress-fill" style={{ width: `${c.progress}%` }} />
+                  </div>
+                  <span className="self-progress-label">{c.progress}%</span>
+                </div>
+                {c.note && <p className="self-card-note">{c.note}</p>}
+              </div>
+            ))}
+          </div>
+
+          {showCForm && (
+            <div className="books-form">
+              <h2 className="books-form-title">{editCId != null ? 'Редактировать курс' : 'Новый курс'}</h2>
+              <input className="books-field" placeholder="Название *"
+                value={cTitle} onChange={e => setCTitle(e.target.value)} />
+
+              {/* Platform */}
+              <div className="self-btn-row">
+                {SELF_PLATFORMS.map(p => (
+                  <button key={p} type="button"
+                    className={`film-genre-btn${cPlatform === p ? ' film-genre-btn--active' : ''}`}
+                    onClick={() => setCPlatform(p)}
+                  >{p}</button>
+                ))}
+              </div>
+
+              {/* Status */}
+              <div className="self-btn-row">
+                {(Object.entries(COURSE_STATUS_MAP) as [CourseStatus, string][]).map(([k, label]) => (
+                  <button key={k} type="button"
+                    className={`film-genre-btn${cStatus === k ? ' film-genre-btn--active' : ''}`}
+                    onClick={() => setCStatus(k)}
+                  >{label}</button>
+                ))}
+              </div>
+
+              {/* Progress slider */}
+              <div className="self-slider-wrap">
+                <label className="self-slider-label">Прогресс: {cProgress}%</label>
+                <input type="range" min={0} max={100} step={5}
+                  className="self-range"
+                  value={cProgress}
+                  style={{ '--percent': `${cProgress}%` } as React.CSSProperties}
+                  onChange={e => setCProgress(Number(e.target.value))} />
+              </div>
+
+              <input className="books-field" placeholder="Заметка (необязательно)"
+                value={cNote} onChange={e => setCNote(e.target.value)} />
+
+              <div className="books-form-actions">
+                <button className="books-cancel-btn" onClick={closeCForm}>Отмена</button>
+                <button className="books-save-btn" onClick={saveCourse} disabled={!cTitle.trim()}>Сохранить</button>
+              </div>
+            </div>
+          )}
+          {!showCForm && (
+            <button className="books-fab" onClick={openAddCourse}>+</button>
+          )}
+        </>
+      )}
+
+      {/* ── SKILLS ── */}
+      {tab === 'skills' && (
+        <>
+          {skills.length === 0 && !showSForm && (
+            <p className="books-empty">Добавь первый навык ⭐</p>
+          )}
+          <div className="books-list">
+            {skills.map((s, idx) => {
+              const cat = SKILL_CATS.find(c => c.key === s.category)!
+              return (
+                <div key={s.id} className="self-card" style={{ background: BOOK_GRADS[idx % BOOK_GRADS.length] }}>
+                  <div className="book-card-top">
+                    <div className="self-card-info">
+                      <p className="self-card-title">{s.name}</p>
+                      <p className="self-card-meta">
+                        <span className="self-platform-tag">{cat.label}</span>
+                      </p>
+                      <div className="self-stars">
+                        {[1,2,3,4,5].map(n => (
+                          <span key={n} className={`self-star${n <= s.level ? ' self-star--on' : ''}`}>★</span>
+                        ))}
+                      </div>
+                    </div>
+                    <div className="book-card-actions">
+                      <button className="book-edit" onClick={() => openEditSkill(s)}>✏️</button>
+                      <button className="book-delete" onClick={() => deleteSkill(s.id)}>×</button>
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+
+          {showSForm && (
+            <div className="books-form">
+              <h2 className="books-form-title">{editSId != null ? 'Редактировать навык' : 'Новый навык'}</h2>
+              <input className="books-field" placeholder="Название навыка *"
+                value={sName} onChange={e => setSName(e.target.value)} />
+
+              {/* Category */}
+              <div className="self-btn-row" style={{ flexWrap: 'wrap' }}>
+                {SKILL_CATS.map(c => (
+                  <button key={c.key} type="button"
+                    className={`film-genre-btn${sCat === c.key ? ' film-genre-btn--active' : ''}`}
+                    onClick={() => setSCat(c.key)}
+                  >{c.label}</button>
+                ))}
+              </div>
+
+              {/* Star level picker */}
+              <div className="self-star-pick">
+                <span className="self-slider-label">Уровень:</span>
+                <div className="self-stars">
+                  {[1,2,3,4,5].map(n => (
+                    <button key={n} type="button" className="self-star-btn"
+                      onClick={() => setSLevel(n)}
+                    >
+                      <span className={`self-star${n <= sLevel ? ' self-star--on' : ''}`}>★</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="books-form-actions">
+                <button className="books-cancel-btn" onClick={closeSForm}>Отмена</button>
+                <button className="books-save-btn" onClick={saveSkill} disabled={!sName.trim()}>Сохранить</button>
+              </div>
+            </div>
+          )}
+          {!showSForm && (
+            <button className="books-fab" onClick={openAddSkill}>+</button>
+          )}
+        </>
+      )}
+
+      {/* ── IDEAS ── */}
+      {tab === 'ideas' && (
+        <>
+          {/* Quick input */}
+          <div className="self-idea-input-row">
+            <textarea className="self-idea-textarea" placeholder="Новая идея..."
+              value={ideaText} onChange={e => setIdeaText(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); addIdea() } }}
+              rows={2}
+            />
+            <button className="tracker-add-confirm"
+              style={{ width: 40, height: 40, fontSize: 20, borderRadius: 12 }}
+              onClick={addIdea} disabled={!ideaText.trim()}
+            >+</button>
+          </div>
+
+          {ideas.length === 0 && (
+            <p className="books-empty">Записывай идеи, пока не забыл 💡</p>
+          )}
+          <div className="books-list">
+            {ideas.map((idea, idx) => (
+              <div key={idea.id}
+                className={`self-idea-card${idea.done ? ' self-idea-card--done' : ''}`}
+                style={{ background: BOOK_GRADS[idx % BOOK_GRADS.length] }}
+              >
+                <div className="book-card-top">
+                  <p className="self-idea-text">{idea.text}</p>
+                  <div className="book-card-actions">
+                    <button className="book-delete" onClick={() => deleteIdea(idea.id)}>×</button>
+                  </div>
+                </div>
+                <div className="self-idea-footer">
+                  <span className="self-idea-date">{idea.date}</span>
+                  <button
+                    className={`self-idea-done-btn${idea.done ? ' self-idea-done-btn--active' : ''}`}
+                    onClick={() => toggleIdeaDone(idea.id)}
+                  >{idea.done ? '✅ Реализовано' : 'Реализовано ✅'}</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {/* ── REFLECTION ── */}
+      {tab === 'reflection' && (
+        <div className="refl-wrap">
+          {/* Week navigator */}
+          <div className="refl-week-nav">
+            <button className="refl-nav-btn" onClick={() => setReflOffset(o => o - 1)}>←</button>
+            <span className="refl-week-label">
+              {reflOffset === 0 ? 'Эта неделя' : reflOffset === -1 ? 'Прошлая неделя' : 'Неделя'}
+              <br />
+              <span className="refl-week-dates">{getWeekLabel(reflOffset)}</span>
+            </span>
+            <button className="refl-nav-btn" onClick={() => setReflOffset(o => o + 1)}
+              disabled={reflOffset >= 0}>→</button>
+          </div>
+
+          {reflEditing ? (
+            /* ── Edit mode ── */
+            <>
+              <div className="refl-questions">
+                {REFL_QUESTIONS.map((q, i) => (
+                  <div key={i} className="refl-question-block">
+                    <label className="refl-question-label">{q}</label>
+                    <textarea className="refl-textarea"
+                      rows={3}
+                      value={reflQ[i]}
+                      onChange={e => setReflAnswer(i, e.target.value)}
+                      placeholder="Ответ..."
+                    />
+                  </div>
+                ))}
+              </div>
+              <button className="books-save-btn refl-save-btn" onClick={saveReflection}>
+                Сохранить неделю
+              </button>
+            </>
+          ) : (
+            /* ── View mode ── */
+            <>
+              <div className="refl-questions">
+                {REFL_QUESTIONS.map((q, i) => {
+                  const answer = reflQ[i]
+                  return (
+                    <div key={i} className="refl-view-card">
+                      <p className="refl-view-question">{q}</p>
+                      <p className="refl-view-answer">
+                        {answer.trim() ? answer : <span className="refl-view-empty">—</span>}
+                      </p>
+                    </div>
+                  )
+                })}
+              </div>
+              <button className="refl-edit-btn" onClick={() => setReflEditing(true)}>
+                Редактировать
+              </button>
+            </>
+          )}
+        </div>
+      )}
+
+      {/* ── LIBRARY ── */}
+      {tab === 'library' && (
+        <>
+          {/* Search */}
+          <input
+            className="books-field"
+            style={{ display: 'block', width: 'calc(100% - 40px)', margin: '0 20px 14px' }}
+            placeholder="Поиск по заголовку или тегу..."
+            value={insightSearch}
+            onChange={e => setInsightSearch(e.target.value)}
+          />
+
+          {insights.length === 0 && !showIForm && (
+            <p className="books-empty">Сохраняй инсайты из книг и курсов 💡</p>
+          )}
+          {insights.length > 0 && filteredInsights.length === 0 && (
+            <p className="books-empty">Ничего не найдено</p>
+          )}
+
+          <div className="books-list">
+            {filteredInsights.map((ins, idx) => (
+              <div key={ins.id} className="self-card" style={{ background: BOOK_GRADS[idx % BOOK_GRADS.length] }}>
+                <div className="book-card-top">
+                  <div className="self-card-info">
+                    <p className="self-card-title">{ins.title}</p>
+                    {ins.source && <p className="self-status">{ins.source}</p>}
+                  </div>
+                  <div className="book-card-actions">
+                    <button className="book-edit" onClick={() => openEditInsight(ins)}>✏️</button>
+                    <button className="book-delete" onClick={() => deleteInsight(ins.id)}>×</button>
+                  </div>
+                </div>
+                {ins.body && <p className="self-card-note" style={{ fontStyle: 'normal', fontSize: 13 }}>{ins.body}</p>}
+                {ins.tags.length > 0 && (
+                  <div className="insight-tags">
+                    {ins.tags.map(t => (
+                      <span key={t} className="insight-tag">#{t}</span>
+                    ))}
+                  </div>
+                )}
+                <p className="self-idea-date">{ins.date}</p>
+              </div>
+            ))}
+          </div>
+
+          {showIForm && (
+            <div className="books-form">
+              <h2 className="books-form-title">{editIId != null ? 'Редактировать инсайт' : 'Новый инсайт'}</h2>
+              <input className="books-field" placeholder="Заголовок *"
+                value={iTitle} onChange={e => setITitle(e.target.value)} />
+              <textarea className="refl-textarea" rows={4}
+                placeholder="Текст инсайта..."
+                value={iBody} onChange={e => setIBody(e.target.value)} />
+              <input className="books-field" placeholder="Источник (книга, курс...)"
+                value={iSource} onChange={e => setISource(e.target.value)} />
+
+              {/* Tag input */}
+              <div className="insight-tag-row">
+                <input className="books-field" placeholder="Добавить тег..."
+                  style={{ flex: 1, margin: 0 }}
+                  value={iTagInput}
+                  onChange={e => setITagInput(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addTag() } }}
+                />
+                <button className="tracker-add-confirm"
+                  style={{ width: 36, height: 36, fontSize: 18, borderRadius: 10, flexShrink: 0 }}
+                  onClick={addTag} disabled={!iTagInput.trim()}>+</button>
+              </div>
+              {iTags.length > 0 && (
+                <div className="insight-tags">
+                  {iTags.map(t => (
+                    <button key={t} className="insight-tag insight-tag--removable" onClick={() => removeTag(t)}>
+                      #{t} ×
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <div className="books-form-actions">
+                <button className="books-cancel-btn" onClick={closeIForm}>Отмена</button>
+                <button className="books-save-btn" onClick={saveInsight} disabled={!iTitle.trim()}>Сохранить</button>
+              </div>
+            </div>
+          )}
+
+          {!showIForm && (
+            <button className="books-fab" onClick={openAddInsight}>+</button>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+// ── Work Screen ────────────────────────────────────────────────────────────
+
+type WorkTab = 'schedule' | 'tasks' | 'notes'
+
+interface ShiftType {
+  id: number
+  name: string
+  color: string
+}
+
+interface WorkTask {
+  id: number
+  text: string
+  done: boolean
+}
+
+interface WorkNote {
+  id: number
+  text: string
+  date: string
+}
+
+const SHIFT_COLORS = ['#E0BFB6', '#9B8B84', '#B8C9B0', '#B0BED4', '#D4B0C9', '#D4CDB0', '#C9B0B0', '#B0C9C9']
+
+function WorkScreen({ onBack }: { onBack: () => void }) {
+  const [tab, setTab] = useState<WorkTab>('schedule')
+
+  // Schedule
+  const [shiftTypes, setShiftTypes] = useLS<ShiftType[]>('ls-shift-types', [
+    { id: 1, name: 'Рабочий', color: '#E0BFB6' },
+    { id: 2, name: 'Выходной', color: '#B8C9B0' },
+  ])
+  const [schedule, setSchedule] = useLS<Record<string, number[]>>('ls-schedule', {})
+  const [schedMonth, setSchedMonth] = useState(new Date())
+  const [showShiftForm, setShowShiftForm] = useState(false)
+  const [editShiftId, setEditShiftId] = useState<number | null>(null)
+  const [sName, setSName] = useState('')
+  const [sColor, setSColor] = useState(SHIFT_COLORS[0])
+  const [selectedDay, setSelectedDay] = useState<string | null>(null)
+
+  const monthStart = new Date(schedMonth.getFullYear(), schedMonth.getMonth(), 1)
+  const monthEnd = new Date(schedMonth.getFullYear(), schedMonth.getMonth() + 1, 0)
+  const startDow = (monthStart.getDay() + 6) % 7 // Mon=0
+  const daysInMonth = monthEnd.getDate()
+
+  const fmtDate = (y: number, m: number, d: number) =>
+    `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`
+
+  const prevMonth = () => setSchedMonth(new Date(schedMonth.getFullYear(), schedMonth.getMonth() - 1, 1))
+  const nextMonth = () => setSchedMonth(new Date(schedMonth.getFullYear(), schedMonth.getMonth() + 1, 1))
+
+  const monthName = schedMonth.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric' })
+
+  const assignShift = (dateStr: string, shiftId: number) => {
+    setSchedule(prev => {
+      const current = prev[dateStr] || []
+      let next: number[]
+      if (current.includes(shiftId)) {
+        next = current.filter(id => id !== shiftId)
+      } else if (current.length < 2) {
+        next = [...current, shiftId]
+      } else {
+        next = [current[1], shiftId] // заменяем первую если уже 2
+      }
+      if (next.length === 0) {
+        const r = { ...prev }; delete r[dateStr]; return r
+      }
+      return { ...prev, [dateStr]: next }
+    })
+  }
+
+  const saveShift = () => {
+    if (!sName.trim()) return
+    if (editShiftId !== null) {
+      setShiftTypes(prev => prev.map(s => s.id === editShiftId ? { ...s, name: sName, color: sColor } : s))
+    } else {
+      setShiftTypes(prev => [...prev, { id: Date.now(), name: sName, color: sColor }])
+    }
+    setSName(''); setSColor(SHIFT_COLORS[0]); setEditShiftId(null); setShowShiftForm(false)
+  }
+
+  const deleteShift = (id: number) => {
+    setShiftTypes(prev => prev.filter(s => s.id !== id))
+    setSchedule(prev => {
+      const next = { ...prev }
+      Object.keys(next).forEach(k => { if ((next[k] as unknown as number[]).includes(id)) delete next[k] })
+      return next
+    })
+  }
+
+  // Tasks
+  const [tasks, setTasks] = useLS<WorkTask[]>('ls-work-tasks', [])
+  const [taskInput, setTaskInput] = useState('')
+  const [editTaskId, setEditTaskId] = useState<number | null>(null)
+  const [editTaskText, setEditTaskText] = useState('')
+  const addTask = () => {
+    if (!taskInput.trim()) return
+    setTasks(prev => [...prev, { id: Date.now(), text: taskInput.trim(), done: false }])
+    setTaskInput('')
+  }
+  const toggleTask = (id: number) => setTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t))
+  const deleteTask = (id: number) => setTasks(prev => prev.filter(t => t.id !== id))
+  const startEditTask = (t: WorkTask) => { setEditTaskId(t.id); setEditTaskText(t.text) }
+  const saveEditTask = () => {
+    if (!editTaskText.trim()) return
+    setTasks(prev => prev.map(t => t.id === editTaskId ? { ...t, text: editTaskText.trim() } : t))
+    setEditTaskId(null); setEditTaskText('')
+  }
+
+  // Notes
+  const [notes, setNotes] = useLS<WorkNote[]>('ls-work-notes', [])
+  const [noteInput, setNoteInput] = useState('')
+  const addNote = () => {
+    if (!noteInput.trim()) return
+    setNotes(prev => [...prev, { id: Date.now(), text: noteInput.trim(), date: new Date().toLocaleDateString('ru-RU') }])
+    setNoteInput('')
+  }
+  const deleteNote = (id: number) => setNotes(prev => prev.filter(n => n.id !== id))
+
+  const today = new Date()
+  const todayStr = fmtDate(today.getFullYear(), today.getMonth(), today.getDate())
+
+  return (
+    <div className="detail-screen">
+      <button className="back-btn" onClick={onBack}>← Назад</button>
+      <h1 className="detail-title" style={{ marginBottom: 16 }}>Работа</h1>
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        {([['schedule', 'График'], ['tasks', 'Задачи'], ['notes', 'Заметки']] as const).map(([key, label]) => (
+          <button key={key} onClick={() => setTab(key)}
+            style={{ flex: 1, padding: '8px', borderRadius: 14, border: 'none', cursor: 'pointer', fontFamily: 'Jost, sans-serif', fontSize: 13, background: tab === key ? '#9B8B84' : 'rgba(235,229,228,0.6)', color: tab === key ? '#fff' : '#6E5F5D' }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* SCHEDULE TAB */}
+      {tab === 'schedule' && (
+        <>
+          {/* Month nav */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+            <button onClick={prevMonth} style={{ background: 'rgba(235,229,228,0.6)', border: 'none', borderRadius: 10, width: 36, height: 36, cursor: 'pointer', fontSize: 16, color: '#6E5F5D' }}>←</button>
+            <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 18, color: '#6E5F5D', textTransform: 'capitalize' }}>{monthName}</span>
+            <button onClick={nextMonth} style={{ background: 'rgba(235,229,228,0.6)', border: 'none', borderRadius: 10, width: 36, height: 36, cursor: 'pointer', fontSize: 16, color: '#6E5F5D' }}>→</button>
+          </div>
+
+          {/* Day headers */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 4 }}>
+            {['Пн','Вт','Ср','Чт','Пт','Сб','Вс'].map(d => (
+              <div key={d} style={{ textAlign: 'center', fontSize: 11, color: '#9B8B84', padding: '4px 0' }}>{d}</div>
+            ))}
+          </div>
+
+          {/* Calendar grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: 2, marginBottom: 16 }}>
+            {Array.from({ length: startDow }).map((_, i) => <div key={`e${i}`} />)}
+            {Array.from({ length: daysInMonth }).map((_, i) => {
+              const d = i + 1
+              const dateStr = fmtDate(schedMonth.getFullYear(), schedMonth.getMonth(), d)
+              const shiftIds = schedule[dateStr] || []
+              const shifts = shiftIds.map(id => shiftTypes.find(s => s.id === id)).filter(Boolean)
+              const isToday = dateStr === todayStr
+              const isSelected = selectedDay === dateStr
+              return (
+                <div key={d} onClick={() => setSelectedDay(isSelected ? null : dateStr)}
+                  style={{ borderRadius: 8, minHeight: 62, padding: '4px 2px', cursor: 'pointer', textAlign: 'center', background: shifts.length === 1 ? shifts[0]!.color : 'rgba(235,229,228,0.35)', border: isSelected ? '2px solid #6E5F5D' : isToday ? '2px solid #9B8B84' : '1px solid rgba(255,255,255,0.4)', overflow: 'hidden' }}>
+                  <div style={{ fontSize: 11, color: isToday ? '#6E5F5D' : '#9B8B84', fontWeight: isToday ? 700 : 400 }}>{d}</div>
+                  {shifts.length === 1 && <div style={{ fontSize: 9, color: '#6E5F5D', marginTop: 2, lineHeight: 1.2 }}>{shifts[0]!.name}</div>}
+                  {shifts.length === 2 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 1, marginTop: 2 }}>
+                      {shifts.map(s => (
+                        <div key={s!.id} style={{ background: s!.color, borderRadius: 4, fontSize: 8, color: '#6E5F5D', padding: '1px 2px', lineHeight: 1.3 }}>{s!.name}</div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
+            })}
+          </div>
+
+          {/* Shift picker popup */}
+          {selectedDay && (
+            <div style={{ background: 'rgba(235,229,228,0.85)', backdropFilter: 'blur(10px)', borderRadius: 16, padding: 16, marginBottom: 16, border: '1px solid rgba(255,255,255,0.6)' }}>
+              <p style={{ fontFamily: 'Jost, sans-serif', fontSize: 13, color: '#9B8B84', marginBottom: 10 }}>
+                Выбери смену на {new Date(selectedDay + 'T00:00').toLocaleDateString('ru-RU', { day: 'numeric', month: 'long' })}:
+              </p>
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                {shiftTypes.map(s => (
+                  <button key={s.id} onClick={() => assignShift(selectedDay, s.id)}
+                    style={{ padding: '6px 14px', borderRadius: 12, border: (schedule[selectedDay] || []).includes(s.id) ? '2px solid #6E5F5D' : '2px solid transparent', background: s.color, color: '#6E5F5D', cursor: 'pointer', fontSize: 13, fontFamily: 'Jost, sans-serif' }}>
+                    {s.name}
+                  </button>
+                ))}
+                <button onClick={() => setSelectedDay(null)}
+                  style={{ padding: '6px 14px', borderRadius: 12, border: 'none', background: 'rgba(155,139,132,0.2)', color: '#9B8B84', cursor: 'pointer', fontSize: 13 }}>
+                  Отмена
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Shift types */}
+          <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 16, color: '#6E5F5D', marginBottom: 8 }}>Типы смен</p>
+          {shiftTypes.map(s => (
+            <div key={s.id} style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, background: 'rgba(235,229,228,0.4)', borderRadius: 12, padding: '8px 12px' }}>
+              <div style={{ width: 24, height: 24, borderRadius: 6, background: s.color, flexShrink: 0 }} />
+              <span style={{ flex: 1, fontFamily: 'Jost, sans-serif', fontSize: 14, color: '#6E5F5D' }}>{s.name}</span>
+              <button onClick={() => { setEditShiftId(s.id); setSName(s.name); setSColor(s.color); setShowShiftForm(true) }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}>✏️</button>
+              <button onClick={() => deleteShift(s.id)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#9B8B84' }}>×</button>
+            </div>
+          ))}
+
+          {showShiftForm ? (
+            <div style={{ background: 'rgba(235,229,228,0.6)', borderRadius: 16, padding: 16, marginTop: 8 }}>
+              <input className="books-field" placeholder="Название смены" value={sName} onChange={e => setSName(e.target.value)} />
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 10 }}>
+                {SHIFT_COLORS.map(c => (
+                  <div key={c} onClick={() => setSColor(c)}
+                    style={{ width: 28, height: 28, borderRadius: 8, background: c, cursor: 'pointer', border: sColor === c ? '3px solid #6E5F5D' : '3px solid transparent' }} />
+                ))}
+              </div>
+              <div className="books-form-actions" style={{ marginTop: 12 }}>
+                <button className="books-cancel-btn" onClick={() => { setShowShiftForm(false); setSName(''); setEditShiftId(null) }}>Отмена</button>
+                <button className="books-save-btn" onClick={saveShift} disabled={!sName.trim()}>Сохранить</button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setShowShiftForm(true)}
+              style={{ marginTop: 8, width: '100%', padding: '10px', borderRadius: 14, border: '1px dashed #9B8B84', background: 'transparent', color: '#9B8B84', cursor: 'pointer', fontSize: 13, fontFamily: 'Jost, sans-serif' }}>
+              + Добавить тип смены
+            </button>
+          )}
+        </>
+      )}
+
+      {/* TASKS TAB */}
+      {tab === 'tasks' && (
+        <>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            <input className="books-field" placeholder="Новая задача..." value={taskInput}
+              onChange={e => setTaskInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && addTask()}
+              style={{ flex: 1, marginBottom: 0 }} />
+            <button onClick={addTask}
+              style={{ padding: '0 16px', borderRadius: 14, border: 'none', background: '#9B8B84', color: '#fff', cursor: 'pointer', fontFamily: 'Jost, sans-serif', fontSize: 13 }}>
+              +
+            </button>
+          </div>
+          {tasks.length === 0 && <p style={{ textAlign: 'center', color: '#9B8B84', padding: '32px 0' }}>Рабочих задач пока нет ✨</p>}
+          {tasks.map(t => (
+            <div key={t.id} className="book-card" style={{ marginBottom: 10 }}>
+              {editTaskId === t.id ? (
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <input className="books-field" value={editTaskText} onChange={e => setEditTaskText(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && saveEditTask()}
+                    style={{ flex: 1, marginBottom: 0 }} autoFocus />
+                  <button onClick={saveEditTask}
+                    style={{ padding: '0 14px', borderRadius: 12, border: 'none', background: '#9B8B84', color: '#fff', cursor: 'pointer', fontSize: 13 }}>ОК</button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                  <input type="checkbox" checked={t.done} onChange={() => toggleTask(t.id)}
+                    style={{ width: 18, height: 18, cursor: 'pointer', accentColor: '#9B8B84', flexShrink: 0 }} />
+                  <span style={{ flex: 1, fontFamily: 'Jost, sans-serif', fontSize: 14, color: '#6E5F5D', textDecoration: t.done ? 'line-through' : 'none', opacity: t.done ? 0.5 : 1 }}>{t.text}</span>
+                  <button onClick={() => startEditTask(t)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 15 }}>✏️</button>
+                  <button onClick={() => deleteTask(t.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9B8B84', fontSize: 18 }}>×</button>
+                </div>
+              )}
+            </div>
+          ))}
+        </>
+      )}
+
+      {/* NOTES TAB */}
+      {tab === 'notes' && (
+        <>
+          <textarea className="books-field" placeholder="Новая заметка..." value={noteInput}
+            onChange={e => setNoteInput(e.target.value)}
+            style={{ minHeight: 80, resize: 'vertical', marginBottom: 8 }} />
+          <button onClick={addNote}
+            style={{ width: '100%', padding: '10px', borderRadius: 14, border: 'none', background: '#9B8B84', color: '#fff', cursor: 'pointer', fontFamily: 'Jost, sans-serif', fontSize: 13, marginBottom: 16 }}>
+            Добавить заметку
+          </button>
+          {notes.length === 0 && <p style={{ textAlign: 'center', color: '#9B8B84', padding: '32px 0' }}>Заметок пока нет ✨</p>}
+          {notes.map(n => (
+            <div key={n.id} className="book-card" style={{ marginBottom: 10 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <p style={{ fontFamily: 'Jost, sans-serif', fontSize: 14, color: '#6E5F5D', flex: 1, margin: 0 }}>{n.text}</p>
+                <button onClick={() => deleteNote(n.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9B8B84', fontSize: 18, marginLeft: 8 }}>×</button>
+              </div>
+              <p style={{ fontFamily: 'Jost, sans-serif', fontSize: 11, color: '#9B8B84', margin: '6px 0 0' }}>{n.date}</p>
+            </div>
+          ))}
+        </>
+      )}
+    </div>
+  )
+}
+
+// ── Study Screen ────────────────────────────────────────────────────────────
+
+type StudyTab = 'schedule' | 'subjects' | 'tasks'
+
+const STUDY_WEEK_DAYS = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс']
+const SUBJECT_COLORS = ['#E0BFB6', '#9B8B84', '#B8C9B0', '#B0BED4', '#D4B0C9', '#D4CDB0', '#C9B0B0']
+const URGENCY_LABELS = { hot: '🔴 Горит', soon: '🟡 Скоро', calm: '🟢 Не срочно' } as const
+type Urgency = keyof typeof URGENCY_LABELS
+
+interface StudyLesson {
+  id: number
+  day: number // 0=Пн
+  time: string
+  name: string
+  room: string
+  subjectId?: number
+}
+
+interface StudySubject {
+  id: number
+  name: string
+  teacher: string
+  color: string
+  progress: number // 0-5 stars
+}
+
+interface StudyTask {
+  id: number
+  text: string
+  subjectId?: number
+  deadline: string
+  urgency: Urgency
+  done: boolean
+}
+
+function StudyScreen({ onBack }: { onBack: () => void }) {
+  const [tab, setTab] = useState<StudyTab>('schedule')
+  const [weekOffset, setWeekOffset] = useState(0)
+
+  // Schedule
+  const [lessons, setLessons] = useLS<StudyLesson[]>('ls-lessons', [])
+  const [showLForm, setShowLForm] = useState(false)
+  const [lDay, setLDay] = useState(0)
+  const [lTime, setLTime] = useState('09:00')
+  const [lName, setLName] = useState('')
+  const [lRoom, setLRoom] = useState('')
+  const [lSubjectId, setLSubjectId] = useState<number | undefined>()
+
+  const resetLForm = () => { setLName(''); setLRoom(''); setLTime('09:00'); setLDay(0); setLSubjectId(undefined) }
+  const addLesson = () => {
+    if (!lName.trim()) return
+    setLessons(prev => [...prev, { id: Date.now(), day: lDay, time: lTime, name: lName.trim(), room: lRoom.trim(), subjectId: lSubjectId }])
+    setShowLForm(false); resetLForm()
+  }
+  const deleteLesson = (id: number) => setLessons(prev => prev.filter(l => l.id !== id))
+
+  // Get week dates
+  const getWeekDates = () => {
+    const now = new Date()
+    const dow = (now.getDay() + 6) % 7
+    const mon = new Date(now); mon.setDate(now.getDate() - dow + weekOffset * 7)
+    return Array.from({ length: 7 }, (_, i) => { const d = new Date(mon); d.setDate(mon.getDate() + i); return d })
+  }
+  const weekDates = getWeekDates()
+  const weekLabel = `${weekDates[0].getDate()} – ${weekDates[6].getDate()} ${weekDates[6].toLocaleDateString('ru-RU', { month: 'long' })}`
+
+  // Subjects
+  const [subjects, setSubjects] = useLS<StudySubject[]>('ls-subjects', [])
+  const [showSForm, setShowSForm] = useState(false)
+  const [editSId, setEditSId] = useState<number | null>(null)
+  const [sName, setSName] = useState('')
+  const [sTeacher, setSTeacher] = useState('')
+  const [sColor, setSColor] = useState(SUBJECT_COLORS[0])
+  const [sProgress, setSProgress] = useState(0)
+
+  const resetSForm = () => { setSName(''); setSTeacher(''); setSColor(SUBJECT_COLORS[0]); setSProgress(0); setEditSId(null) }
+  const openAddSubject = () => { resetSForm(); setShowSForm(true) }
+  const openEditSubject = (s: StudySubject) => { setSName(s.name); setSTeacher(s.teacher); setSColor(s.color); setSProgress(s.progress); setEditSId(s.id); setShowSForm(true) }
+  const saveSubject = () => {
+    if (!sName.trim()) return
+    if (editSId !== null) {
+      setSubjects(prev => prev.map(s => s.id === editSId ? { ...s, name: sName, teacher: sTeacher, color: sColor, progress: sProgress } : s))
+    } else {
+      setSubjects(prev => [...prev, { id: Date.now(), name: sName, teacher: sTeacher, color: sColor, progress: sProgress }])
+    }
+    setShowSForm(false); resetSForm()
+  }
+  const deleteSubject = (id: number) => setSubjects(prev => prev.filter(s => s.id !== id))
+
+  // Tasks
+  const [studyTasks, setStudyTasks] = useLS<StudyTask[]>('ls-study-tasks', [])
+  const [showTForm, setShowTForm] = useState(false)
+  const [tText, setTText] = useState('')
+  const [tSubjectId, setTSubjectId] = useState<number | undefined>()
+  const [tDeadline, setTDeadline] = useState('')
+  const [tUrgency, setTUrgency] = useState<Urgency>('soon')
+
+  const addStudyTask = () => {
+    if (!tText.trim()) return
+    setStudyTasks(prev => [...prev, { id: Date.now(), text: tText.trim(), subjectId: tSubjectId, deadline: tDeadline, urgency: tUrgency, done: false }])
+    setShowTForm(false); setTText(''); setTSubjectId(undefined); setTDeadline(''); setTUrgency('soon')
+  }
+  const [editSTId, setEditSTId] = useState<number | null>(null)
+  const [editSTText, setEditSTText] = useState('')
+  const [editSTUrgency, setEditSTUrgency] = useState<Urgency>('soon')
+  const [editSTDeadline, setEditSTDeadline] = useState('')
+  const [editSTSubjectId, setEditSTSubjectId] = useState<number | undefined>()
+  const startEditST = (t: StudyTask) => { setEditSTId(t.id); setEditSTText(t.text); setEditSTUrgency(t.urgency); setEditSTDeadline(t.deadline); setEditSTSubjectId(t.subjectId) }
+  const saveEditST = () => {
+    if (!editSTText.trim()) return
+    setStudyTasks(prev => prev.map(t => t.id === editSTId ? { ...t, text: editSTText.trim(), urgency: editSTUrgency, deadline: editSTDeadline, subjectId: editSTSubjectId } : t))
+    setEditSTId(null)
+  }
+  const toggleStudyTask = (id: number) => setStudyTasks(prev => prev.map(t => t.id === id ? { ...t, done: !t.done } : t))
+  const deleteStudyTask = (id: number) => setStudyTasks(prev => prev.filter(t => t.id !== id))
+
+  const cardStyle = { background: 'rgba(235,229,228,0.45)', backdropFilter: 'blur(8px)', borderRadius: 16, padding: '12px 14px', border: '1px solid rgba(255,255,255,0.5)', marginBottom: 10 }
+
+  return (
+    <div className="detail-screen">
+      <button className="back-btn" onClick={onBack}>← Назад</button>
+      <h1 className="detail-title" style={{ marginBottom: 16 }}>Учёба</h1>
+
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
+        {([['schedule', 'Расписание'], ['subjects', 'Предметы'], ['tasks', 'Задания']] as const).map(([key, label]) => (
+          <button key={key} onClick={() => setTab(key)}
+            style={{ flex: 1, padding: '8px', borderRadius: 14, border: 'none', cursor: 'pointer', fontFamily: 'Jost, sans-serif', fontSize: 13, background: tab === key ? '#9B8B84' : 'rgba(235,229,228,0.6)', color: tab === key ? '#fff' : '#6E5F5D' }}>
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {/* SCHEDULE */}
+      {tab === 'schedule' && (
+        <>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <button onClick={() => setWeekOffset(w => w - 1)} style={{ background: 'rgba(235,229,228,0.6)', border: 'none', borderRadius: 10, width: 36, height: 36, cursor: 'pointer', fontSize: 16, color: '#6E5F5D' }}>←</button>
+            <span style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 16, color: '#6E5F5D' }}>{weekLabel}</span>
+            <button onClick={() => setWeekOffset(w => w + 1)} style={{ background: 'rgba(235,229,228,0.6)', border: 'none', borderRadius: 10, width: 36, height: 36, cursor: 'pointer', fontSize: 16, color: '#6E5F5D' }}>→</button>
+          </div>
+
+          {STUDY_WEEK_DAYS.map((day, idx) => {
+            const dayLessons = lessons.filter(l => l.day === idx).sort((a, b) => a.time.localeCompare(b.time))
+            const date = weekDates[idx]
+            const isToday = weekOffset === 0 && idx === (new Date().getDay() + 6) % 7
+            return (
+              <div key={idx} style={{ marginBottom: 12 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
+                  <span style={{ fontFamily: 'Jost, sans-serif', fontSize: 13, fontWeight: isToday ? 700 : 400, color: isToday ? '#6E5F5D' : '#9B8B84' }}>
+                    {day} {date.getDate()}
+                  </span>
+                  {isToday && <span style={{ fontSize: 10, background: '#9B8B84', color: '#fff', borderRadius: 8, padding: '1px 8px' }}>сегодня</span>}
+                </div>
+                {dayLessons.length === 0
+                  ? <div style={{ ...cardStyle, color: '#9B8B84', fontSize: 12, textAlign: 'center', padding: '8px' }}>Нет занятий</div>
+                  : dayLessons.map(l => {
+                      const subj = subjects.find(s => s.id === l.subjectId)
+                      return (
+                        <div key={l.id} style={{ ...cardStyle, borderLeft: subj ? `4px solid ${subj.color}` : '4px solid rgba(155,139,132,0.3)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                          <div style={{ minWidth: 44, fontFamily: 'Jost, sans-serif', fontSize: 12, color: '#9B8B84' }}>{l.time}</div>
+                          <div style={{ flex: 1 }}>
+                            <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 15, color: '#6E5F5D' }}>{l.name}</div>
+                            {l.room && <div style={{ fontSize: 11, color: '#9B8B84' }}>📍 {l.room}</div>}
+                          </div>
+                          <button onClick={() => deleteLesson(l.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9B8B84', fontSize: 16 }}>×</button>
+                        </div>
+                      )
+                    })}
+              </div>
+            )
+          })}
+
+          {showLForm ? (
+            <div style={{ ...cardStyle, marginTop: 8 }}>
+              <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 16, color: '#6E5F5D', marginBottom: 12 }}>Новое занятие</p>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                {STUDY_WEEK_DAYS.map((d, i) => (
+                  <button key={i} onClick={() => setLDay(i)}
+                    style={{ padding: '4px 10px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 12, background: lDay === i ? '#9B8B84' : 'rgba(235,229,228,0.6)', color: lDay === i ? '#fff' : '#6E5F5D' }}>{d}</button>
+                ))}
+              </div>
+              <input type="time" value={lTime} onChange={e => setLTime(e.target.value)} className="books-field" />
+              <input className="books-field" placeholder="Название предмета *" value={lName} onChange={e => setLName(e.target.value)} />
+              <input className="books-field" placeholder="Аудитория (необязательно)" value={lRoom} onChange={e => setLRoom(e.target.value)} />
+              {subjects.length > 0 && (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginTop: 4 }}>
+                  {subjects.map(s => (
+                    <button key={s.id} onClick={() => setLSubjectId(lSubjectId === s.id ? undefined : s.id)}
+                      style={{ padding: '4px 10px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 12, background: lSubjectId === s.id ? s.color : 'rgba(235,229,228,0.6)', color: '#6E5F5D' }}>{s.name}</button>
+                  ))}
+                </div>
+              )}
+              <div className="books-form-actions" style={{ marginTop: 12 }}>
+                <button className="books-cancel-btn" onClick={() => { setShowLForm(false); resetLForm() }}>Отмена</button>
+                <button className="books-save-btn" onClick={addLesson} disabled={!lName.trim()}>Добавить</button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setShowLForm(true)}
+              style={{ width: '100%', padding: '10px', borderRadius: 14, border: '1px dashed #9B8B84', background: 'transparent', color: '#9B8B84', cursor: 'pointer', fontSize: 13, fontFamily: 'Jost, sans-serif', marginTop: 8 }}>
+              + Добавить занятие
+            </button>
+          )}
+        </>
+      )}
+
+      {/* SUBJECTS */}
+      {tab === 'subjects' && (
+        <>
+          {subjects.length === 0 && !showSForm && <p style={{ textAlign: 'center', color: '#9B8B84', padding: '32px 0' }}>Добавь свои предметы 📚</p>}
+          {subjects.map(s => (
+            <div key={s.id} style={{ ...cardStyle, borderLeft: `4px solid ${s.color}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                <div>
+                  <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 17, color: '#6E5F5D' }}>{s.name}</div>
+                  {s.teacher && <div style={{ fontSize: 12, color: '#9B8B84', marginTop: 2 }}>👤 {s.teacher}</div>}
+                  <div style={{ marginTop: 6 }}>
+                    {[1,2,3,4,5].map(i => (
+                      <span key={i} style={{ fontSize: 16, color: i <= s.progress ? '#C4A882' : '#D4C9C6' }}>★</span>
+                    ))}
+                  </div>
+                </div>
+                <div style={{ display: 'flex', gap: 6 }}>
+                  <button onClick={() => openEditSubject(s)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 15 }}>✏️</button>
+                  <button onClick={() => deleteSubject(s.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9B8B84', fontSize: 18 }}>×</button>
+                </div>
+              </div>
+            </div>
+          ))}
+
+          {showSForm ? (
+            <div style={{ ...cardStyle, marginTop: 8 }}>
+              <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 16, color: '#6E5F5D', marginBottom: 12 }}>{editSId ? 'Редактировать' : 'Новый предмет'}</p>
+              <input className="books-field" placeholder="Название *" value={sName} onChange={e => setSName(e.target.value)} />
+              <input className="books-field" placeholder="Преподаватель (необязательно)" value={sTeacher} onChange={e => setSTeacher(e.target.value)} />
+              <div style={{ display: 'flex', gap: 8, margin: '10px 0' }}>
+                {SUBJECT_COLORS.map(c => (
+                  <div key={c} onClick={() => setSColor(c)} style={{ width: 26, height: 26, borderRadius: 8, background: c, cursor: 'pointer', border: sColor === c ? '3px solid #6E5F5D' : '3px solid transparent' }} />
+                ))}
+              </div>
+              <div style={{ display: 'flex', gap: 4, marginBottom: 12 }}>
+                {[1,2,3,4,5].map(i => (
+                  <span key={i} onClick={() => setSProgress(i)} style={{ fontSize: 24, cursor: 'pointer', color: i <= sProgress ? '#C4A882' : '#D4C9C6' }}>★</span>
+                ))}
+              </div>
+              <div className="books-form-actions">
+                <button className="books-cancel-btn" onClick={() => { setShowSForm(false); resetSForm() }}>Отмена</button>
+                <button className="books-save-btn" onClick={saveSubject} disabled={!sName.trim()}>Сохранить</button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={openAddSubject}
+              style={{ width: '100%', padding: '10px', borderRadius: 14, border: '1px dashed #9B8B84', background: 'transparent', color: '#9B8B84', cursor: 'pointer', fontSize: 13, fontFamily: 'Jost, sans-serif', marginTop: 8 }}>
+              + Добавить предмет
+            </button>
+          )}
+        </>
+      )}
+
+      {/* TASKS */}
+      {tab === 'tasks' && (
+        <>
+          {studyTasks.length === 0 && !showTForm && <p style={{ textAlign: 'center', color: '#9B8B84', padding: '32px 0' }}>Заданий пока нет ✨</p>}
+          {studyTasks.map(t => {
+            const subj = subjects.find(s => s.id === t.subjectId)
+            return (
+              <div key={t.id} style={{ ...cardStyle, borderLeft: subj ? `4px solid ${subj.color}` : '4px solid rgba(155,139,132,0.3)', opacity: t.done ? 0.55 : 1 }}>
+                {editSTId === t.id ? (
+                  <div>
+                    <input className="books-field" value={editSTText} onChange={e => setEditSTText(e.target.value)} autoFocus />
+                    <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '8px 0' }}>
+                      {(['hot', 'soon', 'calm'] as Urgency[]).map(u => (
+                        <button key={u} onClick={() => setEditSTUrgency(u)}
+                          style={{ padding: '4px 10px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 12, background: editSTUrgency === u ? '#9B8B84' : 'rgba(235,229,228,0.6)', color: editSTUrgency === u ? '#fff' : '#6E5F5D' }}>
+                          {URGENCY_LABELS[u]}
+                        </button>
+                      ))}
+                    </div>
+                    {subjects.length > 0 && (
+                      <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 8 }}>
+                        {subjects.map(s => (
+                          <button key={s.id} onClick={() => setEditSTSubjectId(editSTSubjectId === s.id ? undefined : s.id)}
+                            style={{ padding: '3px 10px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 12, background: editSTSubjectId === s.id ? s.color : 'rgba(235,229,228,0.6)', color: '#6E5F5D' }}>
+                            {s.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                    <input className="books-field" type="date" value={editSTDeadline} onChange={e => setEditSTDeadline(e.target.value)} style={{ marginBottom: 8 }} />
+                    <div style={{ display: 'flex', gap: 8 }}>
+                      <button onClick={saveEditST} className="books-save-btn" style={{ flex: 1 }}>Сохранить</button>
+                      <button onClick={() => setEditSTId(null)} className="books-cancel-btn" style={{ flex: 1 }}>Отмена</button>
+                    </div>
+                  </div>
+                ) : (
+                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10 }}>
+                    <input type="checkbox" checked={t.done} onChange={() => toggleStudyTask(t.id)} style={{ marginTop: 3, accentColor: '#9B8B84', cursor: 'pointer' }} />
+                    <div style={{ flex: 1 }}>
+                      <div style={{ fontFamily: 'Jost, sans-serif', fontSize: 14, color: '#6E5F5D', textDecoration: t.done ? 'line-through' : 'none' }}>{t.text}</div>
+                      <div style={{ display: 'flex', gap: 8, marginTop: 4, flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: 11, color: '#9B8B84' }}>{URGENCY_LABELS[t.urgency]}</span>
+                        {subj && <span style={{ fontSize: 11, background: subj.color, color: '#6E5F5D', borderRadius: 8, padding: '1px 8px' }}>{subj.name}</span>}
+                        {t.deadline && <span style={{ fontSize: 11, color: '#9B8B84' }}>📅 {t.deadline}</span>}
+                      </div>
+                    </div>
+                    <button onClick={() => startEditST(t)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 15, padding: '0 2px' }}>✏️</button>
+                    <button onClick={() => deleteStudyTask(t.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9B8B84', fontSize: 18 }}>×</button>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+
+          {showTForm ? (
+            <div style={{ ...cardStyle, marginTop: 8 }}>
+              <p style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 16, color: '#6E5F5D', marginBottom: 12 }}>Новое задание</p>
+              <input className="books-field" placeholder="Задание *" value={tText} onChange={e => setTText(e.target.value)} />
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '10px 0' }}>
+                {(['hot', 'soon', 'calm'] as Urgency[]).map(u => (
+                  <button key={u} onClick={() => setTUrgency(u)}
+                    style={{ padding: '4px 10px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 12, background: tUrgency === u ? '#9B8B84' : 'rgba(235,229,228,0.6)', color: tUrgency === u ? '#fff' : '#6E5F5D' }}>
+                    {URGENCY_LABELS[u]}
+                  </button>
+                ))}
+              </div>
+              {subjects.length > 0 && (
+                <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 10 }}>
+                  {subjects.map(s => (
+                    <button key={s.id} onClick={() => setTSubjectId(tSubjectId === s.id ? undefined : s.id)}
+                      style={{ padding: '4px 10px', borderRadius: 10, border: 'none', cursor: 'pointer', fontSize: 12, background: tSubjectId === s.id ? s.color : 'rgba(235,229,228,0.6)', color: '#6E5F5D' }}>{s.name}</button>
+                  ))}
+                </div>
+              )}
+              <input type="date" className="books-field" value={tDeadline} onChange={e => setTDeadline(e.target.value)} />
+              <div className="books-form-actions" style={{ marginTop: 12 }}>
+                <button className="books-cancel-btn" onClick={() => setShowTForm(false)}>Отмена</button>
+                <button className="books-save-btn" onClick={addStudyTask} disabled={!tText.trim()}>Добавить</button>
+              </div>
+            </div>
+          ) : (
+            <button onClick={() => setShowTForm(true)}
+              style={{ width: '100%', padding: '10px', borderRadius: 14, border: '1px dashed #9B8B84', background: 'transparent', color: '#9B8B84', cursor: 'pointer', fontSize: 13, fontFamily: 'Jost, sans-serif', marginTop: 8 }}>
+              + Добавить задание
+            </button>
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+// ── Wishlist Screen ────────────────────────────────────────────────────────
+
+type WishPriority = 'high' | 'medium' | 'low'
+
+interface WishItem {
+  id: number
+  title: string
+  category: string
+  price?: string
+  link?: string
+  priority: WishPriority
+  emoji: string
+  fulfilled: boolean
+}
+
+const BASE_WISH_CATEGORIES = ['👗 Вещи', '✈️ Путешествия', '🍽️ Впечатления', '📚 Обучение', '💻 Техника']
+// ── Checklists Screen ─────────────────────────────────────────────────────
+
+type Season = 'spring' | 'summer' | 'autumn' | 'winter'
+
+interface CheckItem { id: number; text: string; done: boolean }
+
+const SEASON_CONFIG: Record<Season, {
+  label: string; emoji: string;
+  bg: string; headerBg: string; accent: string; textColor: string; cardBg: string;
+  ideas: string[];
+}> = {
+  spring: {
+    label: 'Чек-лист Весна', emoji: '🌸',
+    bg: 'linear-gradient(160deg, #f9e8f0 0%, #e8f5e9 50%, #fce4ec 100%)',
+    headerBg: 'rgba(248,187,208,0.35)',
+    accent: '#c06080',
+    textColor: '#7b3f5e',
+    cardBg: 'rgba(255,240,245,0.6)',
+    ideas: ['Генеральная уборка 🧹', 'Разобрать гардероб', 'Посадить цветы 🌱', 'Обновить декор дома', 'Пройти медосмотр', 'Записаться к стоматологу', 'Начать бегать на улице 🏃', 'Обновить косметичку', 'Разобрать документы', 'Съездить на природу', 'Открыть окна — проветрить всё!', 'Купить весенние вещи'],
+  },
+  summer: {
+    label: 'Чек-лист Лето', emoji: '☀️',
+    bg: 'linear-gradient(160deg, #fffde7 0%, #e0f7fa 50%, #f9fbe7 100%)',
+    headerBg: 'rgba(255,236,100,0.3)',
+    accent: '#e6a817',
+    textColor: '#7a5800',
+    cardBg: 'rgba(255,253,230,0.65)',
+    ideas: ['Съездить к морю 🌊', 'Попробовать новый спорт', 'Устроить пикник 🧺', 'Прочитать 3 книги', 'Выучить новый рецепт', 'Сделать фотоальбом', 'Встретить рассвет ☀️', 'Посетить фестиваль', 'Научиться плавать', 'Попробовать сёрфинг', 'Купить велосипед 🚲', 'Провести ночь под звёздами'],
+  },
+  autumn: {
+    label: 'Чек-лист Осень', emoji: '🍂',
+    bg: 'linear-gradient(160deg, #fff3e0 0%, #fbe9e7 50%, #f3e5d0 100%)',
+    headerBg: 'rgba(230,150,60,0.25)',
+    accent: '#bf6f30',
+    textColor: '#7a3d00',
+    cardBg: 'rgba(255,243,224,0.65)',
+    ideas: ['Записаться на курс', 'Обновить осенний гардероб', 'Сделать заготовки 🫙', 'Купить тёплый плед', 'Пройтись по осеннему парку 🍁', 'Начать новый проект', 'Поставить цели до конца года', 'Сделать витаминный запас', 'Записаться в тренажёрный зал', 'Устроить уютный вечер кино 🎬', 'Съездить за грибами', 'Обновить рабочее место'],
+  },
+  winter: {
+    label: 'Чек-лист Зима', emoji: '❄️',
+    bg: 'linear-gradient(160deg, #e8eaf6 0%, #e3f2fd 50%, #ede7f6 100%)',
+    headerBg: 'rgba(140,180,230,0.28)',
+    accent: '#4a6fa5',
+    textColor: '#1a3560',
+    cardBg: 'rgba(232,240,255,0.6)',
+    ideas: ['Написать письмо себе на год', 'Подготовить подарки заранее 🎁', 'Освоить вязание или хобби', 'Посмотреть список фильмов', 'Слепить снеговика ☃️', 'Поехать кататься на лыжах', 'Устроить глинтвейн-вечер', 'Подвести итоги года', 'Составить план на новый год', 'Попробовать прорубь 🧊', 'Украсить дом к Новому году', 'Испечь имбирное печенье 🍪'],
+  },
+}
+
+function ChecklistsScreen({ onBack }: { onBack: () => void }) {
+  const [openSeason, setOpenSeason] = useState<Season | null>(null)
+  const [lists, setLists] = useLS<Record<Season, CheckItem[]>>('ls-checklists', { spring: [], summer: [], autumn: [], winter: [] })
+  const [newText, setNewText] = useState('')
+
+  const season = openSeason ? SEASON_CONFIG[openSeason] : null
+
+  const addItem = () => {
+    if (!newText.trim() || !openSeason) return
+    setLists(prev => ({ ...prev, [openSeason]: [...prev[openSeason], { id: Date.now(), text: newText.trim(), done: false }] }))
+    setNewText('')
+  }
+  const toggleItem = (id: number) => {
+    if (!openSeason) return
+    setLists(prev => ({ ...prev, [openSeason]: prev[openSeason].map(i => i.id === id ? { ...i, done: !i.done } : i) }))
+  }
+  const deleteItem = (id: number) => {
+    if (!openSeason) return
+    setLists(prev => ({ ...prev, [openSeason]: prev[openSeason].filter(i => i.id !== id) }))
+  }
+
+  const downloadChecklist = () => {
+    if (!openSeason) return
+    const cfg = SEASON_CONFIG[openSeason]
+    const items = lists[openSeason]
+    const W = 900
+    const COLS = 2
+    const ITEM_H = 56
+    const TOP_PAD = 230
+    const COL_PAD = 60
+    const colW = (W - COL_PAD * 2) / COLS
+    const img = new Image()
+    img.onload = () => renderCanvas(img)
+    img.onerror = () => renderCanvas(null)
+    img.src = `/seasons/${openSeason}.jpg`
+    return
+    function renderCanvas(bgImg: HTMLImageElement | null) {
+    const rows = Math.ceil(items.length / COLS)
+    const H = Math.max(720, TOP_PAD + rows * ITEM_H + 110)
+    const canvas = document.createElement('canvas')
+    canvas.width = W; canvas.height = H
+    const ctx = canvas.getContext('2d')!
+
+
+    // Draw photo background (cover fit)
+    if (bgImg) {
+      const scale = Math.max(W / bgImg.width, H / bgImg.height)
+      const bw = bgImg.width * scale; const bh = bgImg.height * scale
+      ctx.drawImage(bgImg, (W - bw) / 2, (H - bh) / 2, bw, bh)
+    }
+
+    // Dark overlay for text readability
+    const overlayColors: Record<Season, string> = {
+      summer: 'rgba(5,15,40,0.52)', autumn: 'rgba(10,3,0,0.55)',
+      spring: 'rgba(15,5,20,0.50)', winter: 'rgba(2,5,15,0.55)',
+    }
+    ctx.fillStyle = overlayColors[openSeason!]
+    ctx.fillRect(0, 0, W, H)
+
+    // ── Title ────────────────────────────────────────────────
+    const titleColors: Record<Season, string> = {
+      summer: '#fff9c4', autumn: '#fff3e0', spring: '#ffe0ee', winter: '#e8f4ff',
+    }
+    const titleColor = titleColors[openSeason!]
+    const seasonWord = cfg.label.replace('Чек-лист ', '').toUpperCase()
+
+    ctx.textAlign = 'center'
+    ctx.fillStyle = titleColor
+    ctx.font = 'bold 90px Arial Black, Arial, sans-serif'
+    ctx.fillText(seasonWord, W / 2, 108)
+
+    // "ЧЕК-ЛИСТ" with box
+    const word2 = 'ЧЕК-ЛИСТ'
+    ctx.font = 'bold 52px Arial Black, Arial, sans-serif'
+    ctx.textBaseline = 'alphabetic'
+    const m2 = ctx.measureText(word2)
+    const ascent = m2.actualBoundingBoxAscent
+    const descent = m2.actualBoundingBoxDescent
+    const padH = 36; const padV = 18
+    const bW2 = m2.width + padH * 2
+    const bH2 = ascent + descent + padV * 2
+    const bX2 = W / 2 - bW2 / 2
+    const bY2 = 116
+    const textBaseline = bY2 + padV + ascent
+    ctx.strokeStyle = titleColor; ctx.lineWidth = 3.5
+    ctx.beginPath(); ctx.roundRect(bX2, bY2, bW2, bH2, bH2 / 2); ctx.stroke()
+    ctx.fillStyle = titleColor
+    ctx.fillText(word2, W / 2, textBaseline)
+
+    // ── Checklist items ──────────────────────────────────────
+    const itemColor = titleColors[openSeason!]
+    const cbColor: Record<Season, string> = {
+      summer: 'rgba(255,240,120,0.8)', autumn: 'rgba(255,190,100,0.8)',
+      spring: 'rgba(255,180,200,0.8)', winter: 'rgba(180,210,255,0.8)',
+    }
+    const checkColor: Record<Season, string> = {
+      summer: '#ffd700', autumn: '#ff9944', spring: '#ff70a0', winter: '#88bbff',
+    }
+    ctx.textAlign = 'left'
+    ctx.font = '21px Arial, sans-serif'
+    const CB = 22
+
+    items.forEach((item, idx) => {
+      const col = idx % COLS
+      const row = Math.floor(idx / COLS)
+      const x = COL_PAD + col * colW
+      const y = TOP_PAD + row * ITEM_H
+
+      ctx.strokeStyle = cbColor[openSeason!]; ctx.lineWidth = 2
+      ctx.beginPath(); ctx.roundRect(x, y - CB + 4, CB, CB, 4); ctx.stroke()
+      if (item.done) {
+        ctx.fillStyle = checkColor[openSeason!]
+        ctx.font = 'bold 17px Arial'; ctx.fillText('✓', x + 4, y + 2)
+        ctx.font = '21px Arial, sans-serif'
+      }
+      ctx.fillStyle = item.done ? 'rgba(255,255,255,0.4)' : itemColor
+      const maxTextW = colW - CB - 22
+      const words2 = item.text.split(' ')
+      let line = ''; let lineY = y
+      for (const w of words2) {
+        const test = line ? line + ' ' + w : w
+        if (ctx.measureText(test).width > maxTextW && line) {
+          ctx.fillText(line, x + CB + 10, lineY); line = w; lineY += 26
+        } else line = test
+      }
+      ctx.fillText(line, x + CB + 10, lineY)
+    })
+
+    // Footer
+    const done = items.filter(i => i.done).length
+    ctx.textAlign = 'center'
+    ctx.fillStyle = 'rgba(255,255,255,0.38)'
+    ctx.font = '17px Arial, sans-serif'
+    ctx.fillText(`Выполнено: ${done} / ${items.length}`, W / 2, H - 28)
+
+    canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob!)
+      const a = document.createElement('a')
+      a.href = url; a.download = `${cfg.label}.png`; a.click()
+      URL.revokeObjectURL(url)
+    }, 'image/png')
+    } // end renderCanvas
+  }
+
+  // Season detail view
+  if (openSeason && season) {
+    const items = lists[openSeason]
+    const done = items.filter(i => i.done).length
+    return (
+      <div style={{ minHeight: '100vh', background: season.bg, padding: '0 0 80px' }}>
+        {/* Header */}
+        <div style={{ background: season.headerBg, backdropFilter: 'blur(10px)', padding: '20px 20px 16px', borderBottom: `1px solid ${season.accent}33` }}>
+          <button onClick={() => setOpenSeason(null)}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: season.textColor, fontSize: 15, fontFamily: 'Jost, sans-serif', marginBottom: 12, padding: 0 }}>
+            ← Назад
+          </button>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div>
+              <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 26, color: season.textColor, fontWeight: 600 }}>
+                {season.emoji} {season.label.replace('Чек-лист ', '')}
+              </div>
+              <div style={{ fontFamily: 'Jost, sans-serif', fontSize: 13, color: season.accent, marginTop: 4 }}>
+                {done}/{items.length} выполнено
+              </div>
+            </div>
+            <button onClick={downloadChecklist}
+              style={{ background: season.accent, color: '#fff', border: 'none', borderRadius: 12, padding: '8px 14px', cursor: 'pointer', fontFamily: 'Jost, sans-serif', fontSize: 13, display: 'flex', alignItems: 'center', gap: 6 }}>
+              ⬇️ Скачать
+            </button>
+          </div>
+          {/* Progress bar */}
+          {items.length > 0 && (
+            <div style={{ marginTop: 12, background: 'rgba(255,255,255,0.4)', borderRadius: 6, height: 6, overflow: 'hidden' }}>
+              <div style={{ width: `${(done / items.length) * 100}%`, height: '100%', background: season.accent, borderRadius: 6, transition: 'width 0.3s' }} />
+            </div>
+          )}
+        </div>
+
+        <div style={{ padding: '16px 16px 0' }}>
+          {/* Add item */}
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            <input
+              className="books-field"
+              placeholder="Добавить пункт..."
+              value={newText}
+              onChange={e => setNewText(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && addItem()}
+              style={{ flex: 1, marginBottom: 0, background: season.cardBg, borderColor: `${season.accent}55` }}
+            />
+            <button onClick={addItem}
+              style={{ background: season.accent, color: '#fff', border: 'none', borderRadius: 12, padding: '0 16px', cursor: 'pointer', fontSize: 20, flexShrink: 0 }}>
+              +
+            </button>
+          </div>
+
+          {/* Ideas */}
+          {(() => {
+            const cfg = SEASON_CONFIG[openSeason!]
+            const usedTexts = items.map(i => i.text)
+            const available = cfg.ideas.filter(idea => !usedTexts.includes(idea))
+            if (available.length === 0) return null
+            return (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontFamily: 'Jost, sans-serif', fontSize: 12, color: season.accent, marginBottom: 8, opacity: 0.8 }}>
+                  💡 Идеи для списка — нажми чтобы добавить:
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {available.map(idea => (
+                    <button key={idea} onClick={() => {
+                      setLists(prev => ({ ...prev, [openSeason!]: [...prev[openSeason!], { id: Date.now() + Math.random(), text: idea, done: false }] }))
+                    }}
+                      style={{ background: season.cardBg, border: `1px solid ${season.accent}55`, borderRadius: 20, padding: '5px 12px', cursor: 'pointer', fontFamily: 'Jost, sans-serif', fontSize: 12, color: season.textColor, transition: 'all 0.15s' }}>
+                      + {idea}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )
+          })()}
+
+          {/* Items */}
+          {items.length === 0 && (
+            <p style={{ textAlign: 'center', color: season.accent, padding: '20px 0', fontFamily: 'Jost, sans-serif', fontSize: 14 }}>
+              Выбери идею выше или добавь свою {season.emoji}
+            </p>
+          )}
+          {items.map(item => (
+            <div key={item.id} style={{ background: season.cardBg, backdropFilter: 'blur(8px)', borderRadius: 14, padding: '12px 14px', marginBottom: 8, border: `1px solid ${season.accent}33`, display: 'flex', alignItems: 'center', gap: 12 }}>
+              <button onClick={() => toggleItem(item.id)}
+                style={{ width: 24, height: 24, borderRadius: 6, border: `2px solid ${season.accent}`, background: item.done ? season.accent : 'transparent', cursor: 'pointer', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 14, color: '#fff', transition: 'all 0.2s' }}>
+                {item.done ? '✓' : ''}
+              </button>
+              <span style={{ flex: 1, fontFamily: 'Jost, sans-serif', fontSize: 14, color: season.textColor, textDecoration: item.done ? 'line-through' : 'none', opacity: item.done ? 0.55 : 1 }}>
+                {item.text}
+              </span>
+              <button onClick={() => deleteItem(item.id)}
+                style={{ background: 'none', border: 'none', cursor: 'pointer', color: season.accent, fontSize: 18, opacity: 0.6, padding: '0 2px' }}>
+                ×
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    )
+  }
+
+  // Main screen — 4 season cards
+  return (
+    <div className="detail-screen">
+      <button className="back-btn" onClick={onBack}>← Назад</button>
+      <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 26, color: '#6E5F5D', marginBottom: 6, padding: '0 20px' }}>Чек-листы</div>
+      <div style={{ fontFamily: 'Jost, sans-serif', fontSize: 13, color: '#9B8B84', marginBottom: 24, padding: '0 20px' }}>Выбери сезон</div>
+      <div style={{ padding: '0 16px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+        {(['spring', 'summer', 'autumn', 'winter'] as Season[]).map(s => {
+          const cfg = SEASON_CONFIG[s]
+          const total = lists[s].length
+          const done = lists[s].filter(i => i.done).length
+          return (
+            <button key={s} onClick={() => setOpenSeason(s)}
+              style={{ background: cfg.bg, border: `1px solid ${cfg.accent}44`, borderRadius: 20, padding: '20px 14px', cursor: 'pointer', textAlign: 'left', position: 'relative', overflow: 'hidden', minHeight: 130 }}>
+              <div style={{ fontSize: 32, marginBottom: 8 }}>{cfg.emoji}</div>
+              <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 18, color: cfg.textColor, fontWeight: 600, lineHeight: 1.2 }}>{cfg.label.replace('Чек-лист ', '')}</div>
+              {total > 0 && (
+                <div style={{ fontFamily: 'Jost, sans-serif', fontSize: 11, color: cfg.accent, marginTop: 6 }}>
+                  {done}/{total} пунктов
+                </div>
+              )}
+              {total === 0 && (
+                <div style={{ fontFamily: 'Jost, sans-serif', fontSize: 11, color: cfg.accent, marginTop: 6, opacity: 0.7 }}>
+                  Пусто
+                </div>
+              )}
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+const WISH_EMOJIS = ['🌟', '💫', '✨', '🎀', '🌸', '🦋', '🍀', '🎯', '💎', '🌈']
+const PRIORITY_LABELS: Record<WishPriority, string> = { high: '🔥 Очень хочу', medium: '⭐ Хочу', low: '💭 Когда-нибудь' }
+
+function WishlistScreen({ onBack }: { onBack: () => void }) {
+  const [items, setItems] = useLS<WishItem[]>('ls-wishlist', [])
+  const [showForm, setShowForm] = useState(false)
+  const [editId, setEditId] = useState<number | null>(null)
+  const [filterCat, setFilterCat] = useState<string>('Все')
+  const [filterPri, setFilterPri] = useState<WishPriority | 'Все'>('Все')
+  const [showFulfilled, setShowFulfilled] = useState(false)
+  const [customCategories, setCustomCategories] = useLS<string[]>('ls-wish-cats', [])
+  const [showAddCat, setShowAddCat] = useState(false)
+  const [newCatName, setNewCatName] = useState('')
+
+  const allCategories = [...BASE_WISH_CATEGORIES, ...customCategories]
+
+  const addCustomCategory = () => {
+    const name = newCatName.trim()
+    if (!name || allCategories.includes(name)) return
+    setCustomCategories(prev => [...prev, name])
+    setFCat(name)
+    setNewCatName('')
+    setShowAddCat(false)
+  }
+
+  const [fTitle, setFTitle] = useState('')
+  const [fCat, setFCat] = useState<string>('👗 Вещи')
+  const [fPrice, setFPrice] = useState('')
+  const [fLink, setFLink] = useState('')
+  const [fPriority, setFPriority] = useState<WishPriority>('medium')
+  const [fEmoji, setFEmoji] = useState('🌟')
+
+  const resetForm = () => { setFTitle(''); setFCat('🎁 Другое'); setFPrice(''); setFLink(''); setFPriority('medium'); setFEmoji('🌟'); setEditId(null) }
+
+  const openAdd = () => { resetForm(); setShowForm(true) }
+  const openEdit = (w: WishItem) => { setFTitle(w.title); setFCat(w.category); setFPrice(w.price || ''); setFLink(w.link || ''); setFPriority(w.priority); setFEmoji(w.emoji); setEditId(w.id); setShowForm(true) }
+
+  const save = () => {
+    if (!fTitle.trim()) return
+    if (editId !== null) {
+      setItems(prev => prev.map(w => w.id === editId ? { ...w, title: fTitle, category: fCat, price: fPrice || undefined, link: fLink || undefined, priority: fPriority, emoji: fEmoji } : w))
+    } else {
+      setItems(prev => [...prev, { id: Date.now(), title: fTitle, category: fCat, price: fPrice || undefined, link: fLink || undefined, priority: fPriority, emoji: fEmoji, fulfilled: false }])
+    }
+    setShowForm(false); resetForm()
+  }
+
+  const fulfill = (id: number) => setItems(prev => prev.map(w => w.id === id ? { ...w, fulfilled: true } : w))
+  const remove = (id: number) => setItems(prev => prev.filter(w => w.id !== id))
+
+  const active = items.filter(w => !w.fulfilled && (filterCat === 'Все' || w.category === filterCat) && (filterPri === 'Все' || w.priority === filterPri))
+  const fulfilled = items.filter(w => w.fulfilled)
+
+  return (
+    <div className="detail-screen">
+      <button className="back-btn" onClick={onBack}>← Назад</button>
+      <h1 className="detail-title" style={{ marginBottom: 4 }}>Список желаний</h1>
+      <p style={{ textAlign: 'center', color: '#9B8B84', fontSize: 13, marginBottom: 16 }}>
+        Исполнилось: {fulfilled.length} ✨ · Осталось: {items.filter(w => !w.fulfilled).length}
+      </p>
+
+      {/* Фильтры */}
+      <div style={{ background: 'rgba(235,229,228,0.35)', borderRadius: 16, border: '1px solid rgba(155,139,132,0.25)', padding: '10px 12px', marginBottom: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 7 }}>
+          <div style={{ fontFamily: 'Jost, sans-serif', fontSize: 11, color: '#9B8B84' }}>Категория</div>
+          <button onClick={() => { setShowAddCat(v => !v); setNewCatName('') }}
+            style={{ fontSize: 11, padding: '2px 8px', borderRadius: 20, border: '1px solid rgba(155,139,132,0.35)', cursor: 'pointer', background: 'transparent', color: '#9B8B84' }}>
+            {showAddCat ? '✕ Отмена' : '+ Своя'}
+          </button>
+        </div>
+        {showAddCat && (
+          <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+            <input
+              value={newCatName}
+              onChange={e => setNewCatName(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && addCustomCategory()}
+              placeholder="Название категории"
+              style={{ flex: 1, fontSize: 12, padding: '5px 10px', borderRadius: 12, border: '1px solid rgba(155,139,132,0.4)', background: 'rgba(255,255,255,0.5)', color: '#6E5F5D', outline: 'none' }}
+            />
+            <button onClick={addCustomCategory}
+              style={{ fontSize: 12, padding: '5px 12px', borderRadius: 12, border: 'none', cursor: 'pointer', background: '#9B8B84', color: '#fff' }}>
+              Добавить
+            </button>
+          </div>
+        )}
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {(['Все', ...allCategories]).map(c => (
+            <button key={c} onClick={() => setFilterCat(c)}
+              style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, border: filterCat === c ? 'none' : '1px solid rgba(155,139,132,0.35)', cursor: 'pointer', background: filterCat === c ? '#9B8B84' : 'transparent', color: filterCat === c ? '#fff' : '#6E5F5D' }}>
+              {c}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div style={{ background: 'rgba(235,229,228,0.35)', borderRadius: 16, border: '1px solid rgba(155,139,132,0.25)', padding: '10px 12px', marginBottom: 16 }}>
+        <div style={{ fontFamily: 'Jost, sans-serif', fontSize: 11, color: '#9B8B84', marginBottom: 7 }}>Приоритет</div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {(['Все', 'high', 'medium', 'low'] as const).map(p => (
+            <button key={p} onClick={() => setFilterPri(p as any)}
+              style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, border: filterPri === p ? 'none' : '1px solid rgba(155,139,132,0.35)', cursor: 'pointer', background: filterPri === p ? '#9B8B84' : 'transparent', color: filterPri === p ? '#fff' : '#6E5F5D' }}>
+              {p === 'Все' ? 'Все' : PRIORITY_LABELS[p]}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Список */}
+      {active.length === 0 && <p style={{ textAlign: 'center', color: '#9B8B84', padding: '32px 0' }}>Добавь своё первое желание 🌟</p>}
+      {active.map(w => (
+        <div key={w.id} className="book-card" style={{ marginBottom: 12 }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <div style={{ display: 'flex', gap: 10, alignItems: 'center', flex: 1 }}>
+              <span style={{ fontSize: 28 }}>{w.emoji}</span>
+              <div style={{ flex: 1 }}>
+                <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 16, color: '#6E5F5D' }}>{w.title}</div>
+                <div style={{ fontSize: 12, color: '#9B8B84', marginTop: 2 }}>{w.category} · {PRIORITY_LABELS[w.priority]}</div>
+                {w.price && <div style={{ fontSize: 12, color: '#9B8B84' }}>💰 {w.price}</div>}
+                {w.link && <a href={w.link} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: '#E0BFB6' }}>🔗 Ссылка</a>}
+              </div>
+            </div>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button onClick={() => openEdit(w)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16 }}>✏️</button>
+              <button onClick={() => remove(w.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#9B8B84' }}>×</button>
+            </div>
+          </div>
+          <button onClick={() => fulfill(w.id)}
+            style={{ marginTop: 10, width: '100%', padding: '8px', borderRadius: 10, border: '1px solid rgba(224,191,182,0.5)', background: 'rgba(235,229,228,0.4)', color: '#6E5F5D', cursor: 'pointer', fontSize: 13 }}>
+            Исполнилось ✨
+          </button>
+        </div>
+      ))}
+
+      {/* Исполненные */}
+      {fulfilled.length > 0 && (
+        <div style={{ marginTop: 20 }}>
+          <button onClick={() => setShowFulfilled(v => !v)}
+            style={{ background: 'none', border: 'none', color: '#9B8B84', fontSize: 13, cursor: 'pointer', marginBottom: 8 }}>
+            {showFulfilled ? '▼' : '▶'} Исполненные ({fulfilled.length})
+          </button>
+          {showFulfilled && fulfilled.map(w => (
+            <div key={w.id} className="book-card" style={{ marginBottom: 8, opacity: 0.6 }}>
+              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                <span style={{ fontSize: 24 }}>{w.emoji}</span>
+                <div>
+                  <div style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: 15, color: '#6E5F5D', textDecoration: 'line-through' }}>{w.title}</div>
+                  <div style={{ fontSize: 12, color: '#9B8B84' }}>✨ Исполнилось</div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Форма */}
+      {showForm && (
+        <div className="books-form" style={{ marginTop: 16 }}>
+          <h3 style={{ fontFamily: 'Cormorant Garamond, serif', color: '#6E5F5D', marginBottom: 12 }}>{editId ? 'Редактировать' : 'Новое желание'}</h3>
+          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+            {WISH_EMOJIS.map(e => (
+              <button key={e} onClick={() => setFEmoji(e)}
+                style={{ fontSize: 22, background: fEmoji === e ? 'rgba(224,191,182,0.4)' : 'transparent', border: fEmoji === e ? '2px solid #E0BFB6' : '2px solid transparent', borderRadius: 10, padding: 4, cursor: 'pointer' }}>
+                {e}
+              </button>
+            ))}
+          </div>
+          <input className="books-field" placeholder="Название *" value={fTitle} onChange={e => setFTitle(e.target.value)} />
+          <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', margin: '10px 0' }}>
+            {allCategories.map(c => (
+              <button key={c} onClick={() => setFCat(c)}
+                style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, border: 'none', cursor: 'pointer', background: fCat === c ? '#9B8B84' : 'rgba(235,229,228,0.6)', color: fCat === c ? '#fff' : '#6E5F5D' }}>
+                {c}
+              </button>
+            ))}
+            {showAddCat ? (
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', width: '100%', marginTop: 6 }}>
+                <input className="books-field" placeholder="Название категории" value={newCatName}
+                  onChange={e => setNewCatName(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && addCustomCategory()}
+                  style={{ flex: 1, marginBottom: 0 }} />
+                <button onClick={addCustomCategory}
+                  style={{ padding: '6px 14px', borderRadius: 16, border: 'none', background: '#9B8B84', color: '#fff', cursor: 'pointer', fontSize: 12 }}>
+                  ОК
+                </button>
+                <button onClick={() => { setShowAddCat(false); setNewCatName('') }}
+                  style={{ padding: '6px 10px', borderRadius: 16, border: 'none', background: 'rgba(235,229,228,0.6)', color: '#6E5F5D', cursor: 'pointer', fontSize: 12 }}>
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <button onClick={() => setShowAddCat(true)}
+                style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, border: '1px dashed #9B8B84', background: 'transparent', color: '#9B8B84', cursor: 'pointer' }}>
+                + Своя
+              </button>
+            )}
+          </div>
+          <div style={{ display: 'flex', gap: 6, marginBottom: 10 }}>
+            {(['high', 'medium', 'low'] as WishPriority[]).map(p => (
+              <button key={p} onClick={() => setFPriority(p)}
+                style={{ fontSize: 11, padding: '4px 10px', borderRadius: 20, border: 'none', cursor: 'pointer', background: fPriority === p ? '#9B8B84' : 'rgba(235,229,228,0.6)', color: fPriority === p ? '#fff' : '#6E5F5D' }}>
+                {PRIORITY_LABELS[p]}
+              </button>
+            ))}
+          </div>
+          <input className="books-field" placeholder="Цена (необязательно)" value={fPrice} onChange={e => setFPrice(e.target.value)} />
+          <input className="books-field" placeholder="Ссылка (необязательно)" value={fLink} onChange={e => setFLink(e.target.value)} />
+          <div className="books-form-actions">
+            <button className="books-cancel-btn" onClick={() => { setShowForm(false); resetForm() }}>Отмена</button>
+            <button className="books-save-btn" onClick={save} disabled={!fTitle.trim()}>Сохранить</button>
+          </div>
+        </div>
+      )}
+
+      {!showForm && <button className="books-fab" onClick={openAdd}>+</button>}
+    </div>
+  )
+}
+
 // ── App ────────────────────────────────────────────────────────────────────
 
 export default function App() {
@@ -2857,6 +4700,16 @@ export default function App() {
             <TrackerScreen key="tracker" onBack={() => setSelectedCard(null)} />
           ) : selectedCard.id === 7 ? (
             <RelationsScreen key="relations" onBack={() => setSelectedCard(null)} />
+          ) : selectedCard.id === 8 ? (
+            <SelfScreen key="self" onBack={() => setSelectedCard(null)} />
+          ) : selectedCard.id === 14 ? (
+            <WorkScreen key="work" onBack={() => setSelectedCard(null)} />
+          ) : selectedCard.id === 15 ? (
+            <StudyScreen key="study" onBack={() => setSelectedCard(null)} />
+          ) : selectedCard.id === 16 ? (
+            <WishlistScreen key="wishlist" onBack={() => setSelectedCard(null)} />
+          ) : selectedCard.id === 17 ? (
+            <ChecklistsScreen key="checklists" onBack={() => setSelectedCard(null)} />
           ) : (
             <div className="detail-screen" key={selectedCard.id}>
               <button className="back-btn" onClick={() => setSelectedCard(null)}>
