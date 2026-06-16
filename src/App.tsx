@@ -10,6 +10,10 @@ const SyncCtx = createContext<{ status: SyncStatus; setStatus: (s: SyncStatus) =
 })
 function useSyncStatus() { return useContext(SyncCtx) }
 
+// ── Dark Mode Context ──────────────────────────────────────────────────────
+const DarkCtx = createContext<{ dark: boolean; toggle: () => void }>({ dark: false, toggle: () => {} })
+function useDark() { return useContext(DarkCtx) }
+
 // ── Auth Screen ────────────────────────────────────────────────────────────
 function AuthScreen({ onAuth }: { onAuth: (user: User) => void }) {
   const [mode, setMode] = useState<'login' | 'register'>('login')
@@ -4969,6 +4973,12 @@ function WishlistScreen(_: { onBack: () => void }) {
 export default function App() {
   const [user, setUser] = useState<User | null>(null)
   const [authLoading, setAuthLoading] = useState(true)
+  const [dark, setDark] = useState(() => localStorage.getItem('ls-dark') === '1')
+
+  useEffect(() => {
+    document.documentElement.dataset.theme = dark ? 'dark' : ''
+    localStorage.setItem('ls-dark', dark ? '1' : '0')
+  }, [dark])
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => {
@@ -4981,15 +4991,27 @@ export default function App() {
     return () => subscription.unsubscribe()
   }, [])
 
+  const darkCtxVal = { dark, toggle: () => setDark(d => !d) }
+
   if (authLoading) return (
-    <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-      <p style={{ color: '#9B8B84', fontFamily: 'Jost, sans-serif' }}>Загрузка...</p>
-    </div>
+    <DarkCtx.Provider value={darkCtxVal}>
+      <div style={{ minHeight: '100dvh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <p style={{ color: '#9B8B84', fontFamily: 'Jost, sans-serif' }}>Загрузка...</p>
+      </div>
+    </DarkCtx.Provider>
   )
 
-  if (!user) return <AuthScreen onAuth={setUser} />
+  if (!user) return (
+    <DarkCtx.Provider value={darkCtxVal}>
+      <AuthScreen onAuth={setUser} />
+    </DarkCtx.Provider>
+  )
 
-  return <AppWithSync user={user} />
+  return (
+    <DarkCtx.Provider value={darkCtxVal}>
+      <AppWithSync user={user} />
+    </DarkCtx.Provider>
+  )
 }
 
 function AppWithSync({ user }: { user: User }) {
@@ -5155,6 +5177,7 @@ function MainApp({ user }: { user: User }) {
 function ProfileScreen({ user, onClose }: { user: User; onClose: () => void }) {
   const name = user.user_metadata?.name || user.email?.split('@')[0] || 'Пользователь'
   const initials = name[0]?.toUpperCase() || 'U'
+  const { dark, toggle } = useDark()
 
   return (
     <div style={{
@@ -5162,13 +5185,8 @@ function ProfileScreen({ user, onClose }: { user: User; onClose: () => void }) {
       background: 'rgba(110,95,93,0.18)', backdropFilter: 'blur(8px)',
       display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
     }} onClick={onClose}>
-      <div onClick={e => e.stopPropagation()} style={{
-        width: '100%', maxWidth: 480,
-        background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(24px)',
-        borderRadius: '28px 28px 0 0', padding: '32px 24px 40px',
-        boxShadow: '0 -8px 40px rgba(110,95,93,0.15)',
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28 }}>
+      <div onClick={e => e.stopPropagation()} className="profile-sheet">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 24 }}>
           <div style={{
             width: 64, height: 64, borderRadius: '50%',
             background: 'linear-gradient(145deg, rgba(224,191,182,0.8), rgba(155,139,132,0.5))',
@@ -5176,21 +5194,26 @@ function ProfileScreen({ user, onClose }: { user: User; onClose: () => void }) {
             fontSize: 26, fontWeight: 600, color: '#fff', fontFamily: 'Cormorant Garamond, serif',
           }}>{initials}</div>
           <div>
-            <h2 style={{ fontFamily: 'Jost, sans-serif', fontSize: 18, fontWeight: 600, color: '#6E5F5D', margin: 0 }}>{name}</h2>
-            <p style={{ fontSize: 13, color: '#9B8B84', margin: '2px 0 0', fontFamily: 'Jost, sans-serif' }}>{user.email}</p>
+            <h2 style={{ fontFamily: 'Jost, sans-serif', fontSize: 18, fontWeight: 600, color: 'var(--brown-dark)', margin: 0 }}>{name}</h2>
+            <p style={{ fontSize: 13, color: 'var(--brown-mid)', margin: '2px 0 0', fontFamily: 'Jost, sans-serif' }}>{user.email}</p>
           </div>
         </div>
-        <button onClick={() => supabase.auth.signOut()} style={{
-          width: '100%', padding: '14px', borderRadius: 16, border: 'none',
-          background: 'rgba(224,191,182,0.4)', color: '#6E5F5D',
-          fontSize: 15, fontFamily: 'Jost, sans-serif', fontWeight: 500,
-          cursor: 'pointer', marginBottom: 10,
-        }}>Выйти из аккаунта</button>
-        <button onClick={onClose} style={{
-          width: '100%', padding: '14px', borderRadius: 16, border: 'none',
-          background: 'rgba(235,229,228,0.5)', color: '#9B8B84',
-          fontSize: 15, fontFamily: 'Jost, sans-serif', cursor: 'pointer',
-        }}>Закрыть</button>
+
+        {/* Dark mode toggle */}
+        <button onClick={toggle} className="profile-btn profile-btn--toggle">
+          <span>{dark ? '☀️' : '🌙'}</span>
+          <span>{dark ? 'Светлая тема' : 'Тёмная тема'}</span>
+          <span className={`profile-toggle-pill${dark ? ' profile-toggle-pill--on' : ''}`}>
+            <span className="profile-toggle-thumb" />
+          </span>
+        </button>
+
+        <button onClick={() => supabase.auth.signOut()} className="profile-btn profile-btn--signout">
+          Выйти из аккаунта
+        </button>
+        <button onClick={onClose} className="profile-btn profile-btn--close">
+          Закрыть
+        </button>
       </div>
     </div>
   )

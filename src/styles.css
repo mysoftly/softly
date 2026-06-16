@@ -3523,3 +3523,218 @@ body {
 .refl-edit-btn:hover {
   background: rgba(155,139,132,0.25);
 }
+
+/* ══════════════════════════════════════════════════════════════════════════
+   PROFILE SHEET
+   ══════════════════════════════════════════════════════════════════════════ */
+.profile-sheet {
+  width: 100%;
+  max-width: 480px;
+  background: rgba(255,255,255,0.92);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: 28px 28px 0 0;
+  padding: 32px 24px 40px;
+  box-shadow: 0 -8px 40px rgba(110,95,93,0.15);
+  transition: background 0.3s;
+}
+
+.profile-btn {
+  width: 100%;
+  padding: 14px 16px;
+  border-radius: 16px;
+  border: none;
+  font-size: 15px;
+  font-family: 'Jost', sans-serif;
+  cursor: pointer;
+  margin-bottom: 10px;
+  transition: background 0.18s, color 0.18s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.profile-btn--toggle {
+  background: rgba(235,229,228,0.6);
+  color: var(--brown-dark);
+  font-weight: 500;
+  justify-content: flex-start;
+}
+.profile-btn--toggle:hover { background: rgba(224,191,182,0.4); }
+
+.profile-btn--signout {
+  background: rgba(224,191,182,0.4);
+  color: var(--brown-dark);
+  font-weight: 500;
+  justify-content: center;
+}
+.profile-btn--signout:hover { background: rgba(224,191,182,0.65); }
+
+.profile-btn--close {
+  background: rgba(235,229,228,0.4);
+  color: var(--brown-mid);
+  justify-content: center;
+}
+.profile-btn--close:hover { background: rgba(235,229,228,0.7); }
+
+/* Toggle pill */
+.profile-toggle-pill {
+  margin-left: auto;
+  width: 44px;
+  height: 24px;
+  border-radius: 12px;
+  background: rgba(155,139,132,0.25);
+  position: relative;
+  transition: background 0.25s;
+  flex-shrink: 0;
+}
+.profile-toggle-pill--on {
+  background: #9B8B84;
+}
+.profile-toggle-thumb {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.18);
+  transition: transform 0.25s;
+}
+.profile-toggle-pill--on .profile-toggle-thumb {
+  transform: translateX(20px);
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   DARK MODE
+   ══════════════════════════════════════════════════════════════════════════ */
+html[data-theme="dark"] {
+  --brown-dark:  #EDE5E3;
+  --brown-mid:   #C4AFA9;
+  --beige-light: #1A1614;
+  --rose:        #5C3E3A;
+  --pink-soft:   #2D2220;
+}
+
+html[data-theme="dark"] body {
+  background-color: #1A1614;
+  background-image:
+    radial-gradient(ellipse at 8% 8%,   rgba(70,45,40,0.95) 0%, transparent 52%),
+    radial-gradient(ellipse at 92% 88%, rgba(55,35,30,0.95) 0%, transparent 52%),
+    radial-gradient(ellipse at 80% 5%,  rgba(50,32,28,0.6)  0%, transparent 42%),
+    radial-gradient(ellipse at 18% 92%, rgba(70,45,40,0.6)  0%, transparent 42%);
+  color: #EDE5E3;
+}
+
+/* Cards on home screen */
+html[data-theme="dark"] .card {
+  border-color: rgba(255,255,255,0.07);
+  box-shadow: 0 4px 22px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06);
+}
+html[data-theme="dark"] .card:hover {
+  box-shadow: 0 10px 36px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.07);
+}
+
+/* Nav bar */
+html[data-theme="dark"] .nav-bar {
+  background: rgba(28,22,20,0.85);
+  border-top-color: rgba(255,255,255,0.07);
+}
+
+/* Tracker */
+html[data-theme="dark"] .tracker-habit-card,
+html[data-theme="dark"] .tracker-stat-card {
+  background: rgba(38,28,25,0.75);
+  border-color: rgba(255,255,255,0.07);
+}
+html[data-theme="dark"] .tracker-view-switch {
+  background: rgba(40,30,27,0.7);
+}
+html[data-theme="dark"] .tracker-view-btn--active {
+  background: rgba(60,45,40,0.9);
+}
+html[data-theme="dark"] .tracker-form {
+  background: linear-gradient(145deg, rgba(50,35,30,0.8), rgba(60,40,35,0.6));
+  border-color: rgba(255,255,255,0.07);
+}
+
+/* Books / Films / etc forms & items */
+html[data-theme="dark"] .books-form {
+  background: linear-gradient(145deg, rgba(45,32,28,0.85), rgba(55,38,33,0.7));
+  border-color: rgba(255,255,255,0.07);
+}
+html[data-theme="dark"] .books-list-item {
+  background: rgba(38,28,25,0.7);
+  border-color: rgba(255,255,255,0.06);
+}
+
+/* Tasks input */
+html[data-theme="dark"] .tasks-input {
+  background: rgba(40,30,27,0.6);
+  border-color: rgba(255,255,255,0.1);
+  color: #EDE5E3;
+}
+html[data-theme="dark"] .tasks-input:focus {
+  background: rgba(50,38,34,0.75);
+  border-color: rgba(255,255,255,0.2);
+}
+html[data-theme="dark"] .tasks-input::placeholder {
+  color: #C4AFA9;
+}
+
+/* Books field */
+html[data-theme="dark"] .books-field {
+  background: rgba(40,30,27,0.6);
+  border-color: rgba(255,255,255,0.1);
+  color: #EDE5E3;
+}
+
+/* Task items */
+html[data-theme="dark"] .task-item {
+  background: rgba(38,28,25,0.65);
+  border-color: rgba(255,255,255,0.06);
+}
+
+/* Self-tabs (Films, etc.) */
+html[data-theme="dark"] .self-tab-bar {
+  background: rgba(40,30,27,0.7);
+}
+html[data-theme="dark"] .self-tab--active {
+  background: rgba(65,48,43,0.9);
+}
+
+/* Profile sheet */
+html[data-theme="dark"] .profile-sheet {
+  background: rgba(30,22,20,0.97);
+  box-shadow: 0 -8px 40px rgba(0,0,0,0.4);
+}
+html[data-theme="dark"] .profile-btn--toggle,
+html[data-theme="dark"] .profile-btn--close {
+  background: rgba(50,38,34,0.7);
+  color: #EDE5E3;
+}
+html[data-theme="dark"] .profile-btn--signout {
+  background: rgba(80,55,48,0.6);
+  color: #EDE5E3;
+}
+
+/* Calendar */
+html[data-theme="dark"] .cal-day--selected {
+  background: rgba(155,139,132,0.5);
+}
+html[data-theme="dark"] .day-panel {
+  background: rgba(30,22,20,0.9);
+  border-top-color: rgba(255,255,255,0.06);
+}
+
+/* Goals */
+html[data-theme="dark"] .goal-card {
+  background: rgba(38,28,25,0.7);
+  border-color: rgba(255,255,255,0.06);
+}
+
+/* Sync indicator */
+html[data-theme="dark"] div[style*="rgba(255,255,255,0.85)"] {
+  background: rgba(28,22,20,0.9) !important;
+}
