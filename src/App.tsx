@@ -461,9 +461,6 @@ function WheelScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="wheel-screen">
-      <div className="tasks-topbar">
-        <button className="back-btn" onClick={onBack}>← Назад</button>
-      </div>
       <h1 className="wheel-title">Колесо баланса</h1>
 
       <div className="radar-wrap">
@@ -671,9 +668,6 @@ function TasksScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="tasks-screen">
-      <div className="tasks-topbar">
-        <button className="back-btn" onClick={onBack}>← Назад</button>
-      </div>
 
       <div className="calendar">
         <div className="cal-nav">
@@ -945,9 +939,6 @@ function BooksScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="books-screen">
-      <div className="tasks-topbar">
-        <button className="back-btn" onClick={onBack}>← Назад</button>
-      </div>
 
       <div className="books-header">
         <h1 className="books-title">Книги</h1>
@@ -1154,9 +1145,6 @@ function FilmsScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="books-screen">
-      <div className="tasks-topbar">
-        <button className="back-btn" onClick={onBack}>← Назад</button>
-      </div>
 
       <div className="books-header">
         <h1 className="books-title">Фильмы и сериалы</h1>
@@ -1431,9 +1419,6 @@ function TrackerScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="tracker-screen">
-      <div className="tasks-topbar">
-        <button className="back-btn" onClick={onBack}>← Назад</button>
-      </div>
 
       {/* view switcher */}
       <div className="tracker-view-switch">
@@ -1717,9 +1702,6 @@ function GoalsScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="books-screen">
-      <div className="tasks-topbar">
-        <button className="back-btn" onClick={onBack}>← Назад</button>
-      </div>
 
       <div className="books-header">
         <h1 className="books-title">Цели</h1>
@@ -1965,9 +1947,6 @@ function BirthdayScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="books-screen">
-      <div className="tasks-topbar">
-        <button className="back-btn" onClick={onBack}>← Назад</button>
-      </div>
 
       <div className="books-header">
         <h1 className="books-title">Дни рождения</h1>
@@ -2240,9 +2219,6 @@ function FinanceScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="books-screen">
-      <div className="tasks-topbar">
-        <button className="back-btn" onClick={onBack}>← Назад</button>
-      </div>
 
       {/* Month nav */}
       <div className="tracker-header" style={{ padding: '8px 20px 0' }}>
@@ -2527,9 +2503,6 @@ function HealthScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="books-screen">
-      <div className="tasks-topbar">
-        <button className="back-btn" onClick={onBack}>← Назад</button>
-      </div>
       <div className="books-header">
         <h1 className="books-title">Здоровье</h1>
       </div>
@@ -2817,9 +2790,6 @@ function RelationsScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="books-screen">
-      <div className="tasks-topbar">
-        <button className="back-btn" onClick={onBack}>← Назад</button>
-      </div>
 
       <div className="books-header">
         <h1 className="books-title">Отношения</h1>
@@ -3209,9 +3179,6 @@ function SelfScreen({ onBack }: { onBack: () => void }) {
 
   return (
     <div className="books-screen">
-      <div className="tasks-topbar">
-        <button className="back-btn" onClick={onBack}>← Назад</button>
-      </div>
 
       <div className="books-header">
         <h1 className="books-title">Саморазвитие</h1>
@@ -4845,6 +4812,17 @@ function MainApp({ user }: { user: User }) {
   return (
     <div className="app">
       <div className="container">
+        {selectedCard && (
+          <div className="bottom-nav">
+            <button className="bottom-nav-btn" onClick={() => setSelectedCard(null)}>
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M3 9.5L12 3l9 6.5V20a1 1 0 01-1 1H5a1 1 0 01-1-1V9.5z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M9 21V12h6v9" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+              <span>Главная</span>
+            </button>
+          </div>
+        )}
         {selectedCard ? (
           selectedCard.id === 1 ? (
             <TasksScreen key="tasks" onBack={() => setSelectedCard(null)} />
@@ -4878,9 +4856,6 @@ function MainApp({ user }: { user: User }) {
             <ChecklistsScreen key="checklists" onBack={() => setSelectedCard(null)} />
           ) : (
             <div className="detail-screen" key={selectedCard.id}>
-              <button className="back-btn" onClick={() => setSelectedCard(null)}>
-                ← Назад
-              </button>
               {selectedCard.id === 11 ? (
                 <ShoppingScreen />
               ) : (
