@@ -144,7 +144,7 @@ function useLS<T>(key: string, init: T): [T, React.Dispatch<React.SetStateAction
   useEffect(() => {
     try { localStorage.setItem(key, JSON.stringify(state)) } catch {}
     if (!userId || !syncReady) return
-    supabase.from('user_data').upsert({ user_id: userId, key, value: state, updated_at: new Date().toISOString() }, { onConflict: 'user_id,key' }).then(() => {})
+    supabase.from('user_data').upsert({ user_id: userId, key, value: state, updated_at: new Date().toISOString() }, { onConflict: 'user_id,key' }).then(({ error }) => { if (error) console.error('[sync error]', key, error.message) else console.log('[sync ok]', key) })
   }, [key, state, userId, syncReady])
 
   return [state, setState]
