@@ -1244,11 +1244,11 @@ function FilmsScreen(_: { onBack: () => void }) {
       {/* Табы */}
       <div className="self-tabs" style={{ margin: '0 16px 16px' }}>
         <button
-          className={`self-tab-btn${filmTab === 'watched' ? ' self-tab-btn--active' : ''}`}
+          className={`self-tab${filmTab === 'watched' ? ' self-tab--active' : ''}`}
           onClick={() => { setFilmTab('watched'); setShowForm(false) }}
         >🎬 Просмотрено</button>
         <button
-          className={`self-tab-btn${filmTab === 'watchlist' ? ' self-tab-btn--active' : ''}`}
+          className={`self-tab${filmTab === 'watchlist' ? ' self-tab--active' : ''}`}
           onClick={() => { setFilmTab('watchlist'); setShowForm(false) }}
         >📌 Хочу посмотреть</button>
       </div>
