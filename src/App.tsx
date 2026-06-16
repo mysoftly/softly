@@ -1,7 +1,14 @@
-import { useState, useMemo, useEffect, useCallback, useRef } from 'react'
+import { useState, useMemo, useEffect, useCallback, useRef, createContext, useContext } from 'react'
 import './styles.css'
 import { supabase } from './supabase'
 import type { User } from '@supabase/supabase-js'
+
+// ── Sync Status Context ────────────────────────────────────────────────────
+type SyncStatus = 'idle' | 'syncing' | 'saved' | 'error'
+const SyncCtx = createContext<{ status: SyncStatus; setStatus: (s: SyncStatus) => void }>({
+  status: 'idle', setStatus: () => {}
+})
+function useSyncStatus() { return useContext(SyncCtx) }
 
 // ── Auth Screen ────────────────────────────────────────────────────────────
 function AuthScreen({ onAuth }: { onAuth: (user: User) => void }) {
@@ -122,6 +129,7 @@ function AuthScreen({ onAuth }: { onAuth: (user: User) => void }) {
 // Логика: побеждает запись с более новой временной меткой (timestamp).
 // Это исключает затирание данных при нестабильной сети.
 function useLS<T>(key: string, init: T): [T, React.Dispatch<React.SetStateAction<T>>] {
+  const { setStatus } = useSyncStatus()
   const tsKey = key + ':ts'
 
   const [state, setState] = useState<T>(() => {
@@ -179,6 +187,7 @@ function useLS<T>(key: string, init: T): [T, React.Dispatch<React.SetStateAction
     if (fromServer.current) { fromServer.current = false; return }
     const now = new Date().toISOString()
     localStorage.setItem(tsKey, String(new Date(now).getTime()))
+    setStatus('syncing')
     const save = async (retries = 3): Promise<void> => {
       const { error } = await supabase.from('user_data')
         .upsert({ user_id: userId, key, value: state, updated_at: now }, { onConflict: 'user_id,key' })
@@ -186,6 +195,8 @@ function useLS<T>(key: string, init: T): [T, React.Dispatch<React.SetStateAction
         await new Promise(r => setTimeout(r, 2000))
         return save(retries - 1)
       }
+      setStatus(error ? 'error' : 'saved')
+      if (!error) setTimeout(() => setStatus('idle'), 2000)
     }
     save()
   }, [key, tsKey, state, userId, syncReady])
@@ -4909,12 +4920,46 @@ export default function App() {
 
   if (!user) return <AuthScreen onAuth={setUser} />
 
-  return <MainApp user={user} />
+  return <AppWithSync user={user} />
+}
+
+function AppWithSync({ user }: { user: User }) {
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>('idle')
+  return (
+    <SyncCtx.Provider value={{ status: syncStatus, setStatus: setSyncStatus }}>
+      <MainApp user={user} />
+      <SyncIndicator status={syncStatus} />
+    </SyncCtx.Provider>
+  )
+}
+
+function SyncIndicator({ status }: { status: SyncStatus }) {
+  if (status === 'idle') return null
+  const map = {
+    syncing: { icon: '↑', label: 'Сохранение...', color: '#9B8B84' },
+    saved:   { icon: '✓', label: 'Сохранено',     color: '#27ae60' },
+    error:   { icon: '⚠', label: 'Нет сети',      color: '#e67e22' },
+  }
+  const { icon, label, color } = map[status]
+  return (
+    <div style={{
+      position: 'fixed', top: 12, right: 12, zIndex: 9999,
+      display: 'flex', alignItems: 'center', gap: 5,
+      background: 'rgba(255,255,255,0.85)', backdropFilter: 'blur(12px)',
+      border: `1px solid ${color}40`, borderRadius: 20,
+      padding: '4px 10px', boxShadow: '0 2px 8px rgba(110,95,93,0.12)',
+      fontSize: 12, color, fontFamily: 'Jost, sans-serif',
+      transition: 'opacity 0.3s',
+    }}>
+      <span>{icon}</span><span>{label}</span>
+    </div>
+  )
 }
 
 function MainApp({ user }: { user: User }) {
   const [search, setSearch] = useState('')
   const [selectedCard, setSelectedCard] = useState<CardData | null>(null)
+  const [showProfile, setShowProfile] = useState(false)
 
   const filtered = cards.filter(c =>
     c.title.toLowerCase().includes(search.toLowerCase())
@@ -4992,7 +5037,7 @@ function MainApp({ user }: { user: User }) {
                   <p className="date">{today}</p>
                   <h1 className="title">Привет, {user.user_metadata?.name || user.email?.split('@')[0]}! 👋</h1>
                 </div>
-                <div className="avatar" onClick={() => supabase.auth.signOut()} title="Выйти" style={{ cursor: 'pointer' }}>
+                <div className="avatar" onClick={() => setShowProfile(true)} title="Профиль" style={{ cursor: 'pointer' }}>
                   {(user.user_metadata?.name || user.email || 'U')[0].toUpperCase()}
                 </div>
               </div>
@@ -5031,6 +5076,52 @@ function MainApp({ user }: { user: User }) {
             </main>
           </div>
         )}
+      </div>
+      {showProfile && <ProfileScreen user={user} onClose={() => setShowProfile(false)} />}
+    </div>
+  )
+}
+
+// ── Profile Screen ─────────────────────────────────────────────────────────
+function ProfileScreen({ user, onClose }: { user: User; onClose: () => void }) {
+  const name = user.user_metadata?.name || user.email?.split('@')[0] || 'Пользователь'
+  const initials = name[0]?.toUpperCase() || 'U'
+
+  return (
+    <div style={{
+      position: 'fixed', inset: 0, zIndex: 2000,
+      background: 'rgba(110,95,93,0.18)', backdropFilter: 'blur(8px)',
+      display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+    }} onClick={onClose}>
+      <div onClick={e => e.stopPropagation()} style={{
+        width: '100%', maxWidth: 480,
+        background: 'rgba(255,255,255,0.92)', backdropFilter: 'blur(24px)',
+        borderRadius: '28px 28px 0 0', padding: '32px 24px 40px',
+        boxShadow: '0 -8px 40px rgba(110,95,93,0.15)',
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 28 }}>
+          <div style={{
+            width: 64, height: 64, borderRadius: '50%',
+            background: 'linear-gradient(145deg, rgba(224,191,182,0.8), rgba(155,139,132,0.5))',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            fontSize: 26, fontWeight: 600, color: '#fff', fontFamily: 'Cormorant Garamond, serif',
+          }}>{initials}</div>
+          <div>
+            <h2 style={{ fontFamily: 'Jost, sans-serif', fontSize: 18, fontWeight: 600, color: '#6E5F5D', margin: 0 }}>{name}</h2>
+            <p style={{ fontSize: 13, color: '#9B8B84', margin: '2px 0 0', fontFamily: 'Jost, sans-serif' }}>{user.email}</p>
+          </div>
+        </div>
+        <button onClick={() => supabase.auth.signOut()} style={{
+          width: '100%', padding: '14px', borderRadius: 16, border: 'none',
+          background: 'rgba(224,191,182,0.4)', color: '#6E5F5D',
+          fontSize: 15, fontFamily: 'Jost, sans-serif', fontWeight: 500,
+          cursor: 'pointer', marginBottom: 10,
+        }}>Выйти из аккаунта</button>
+        <button onClick={onClose} style={{
+          width: '100%', padding: '14px', borderRadius: 16, border: 'none',
+          background: 'rgba(235,229,228,0.5)', color: '#9B8B84',
+          fontSize: 15, fontFamily: 'Jost, sans-serif', cursor: 'pointer',
+        }}>Закрыть</button>
       </div>
     </div>
   )
