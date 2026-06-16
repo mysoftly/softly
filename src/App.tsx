@@ -5242,7 +5242,6 @@ function MainApp({ user }: { user: User }) {
             </header>
 
             <main className="main">
-              <WeatherWidget />
               <div className="grid">
                 {filtered.map(card => (
                   <div
